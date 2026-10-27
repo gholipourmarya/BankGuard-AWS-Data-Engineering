@@ -1,0 +1,55 @@
+name: Deploy ETL code
+
+# Terraform owns the infrastructure (run `terraform apply` manually).
+# This workflow only ships the ETL code: it uploads banking_etl.py and the
+# validation library to S3 and can start the Glue job.
+# Authentication uses OpenID Connect: no AWS access keys are stored in GitHub.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_job:
+        description: "Start the Glue job after deploying"
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write # required to request the OIDC token
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Repository variables (Settings > Secrets and variables > Actions > Variables):
+    #   AWS_DEPLOY_ROLE_ARN  = terraform output github_deploy_role_arn
+    #   AWS_REGION           = e.g. eu-central-1
+    #   BANKGUARD_BUCKET     = terraform output bucket_name
+    #   GLUE_JOB_NAME        = terraform output glue_job_name
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+      - run: pytest -q
+
+      - name: Build library zip
+        run: |
+          mkdir -p build
+          (cd src && zip -j ../build/src.zip validate.py transform.py)
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Upload code to S3
+        run: |
+          aws s3 cp glue/banking_etl.py "s3://${{ vars.BANKGUARD_BUCKET }}/scripts/banking_etl.py"
+          aws s3 cp build/src.zip "s3://${{ vars.BANKGUARD_BUCKET }}/scripts/src.zip"
+
+      - name: Start Glue job
+        if: ${{ inputs.run_job }}
+        run: aws glue start-job-run --job-name "${{ vars.GLUE_JOB_NAME }}"
