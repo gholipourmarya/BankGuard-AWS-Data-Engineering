@@ -1,0 +1,4 @@
+account_id,customer_id,status
+A001,C001,Active
+A002,C002,Active
+A003,C003,Closed
