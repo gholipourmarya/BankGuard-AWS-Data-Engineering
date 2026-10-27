@@ -1,40 +1,17 @@
-cat > .gitignore <<'EOF'
-# Python
 __pycache__/
-*.py[cod]
-.venv/
-venv/
+*.pyc
 .pytest_cache/
-
-# Environment variables and credentials
+.venv/
+build/
+output/
+output_example/
 .env
 .env.*
-!.env.example
-.aws/
-*.pem
-*.key
-
+# generated data can be recreated with src/generate_data.py
+data/*.csv
+data/*.json
 # Terraform
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfvars
-*.tfvars.json
-crash.log
-crash.*.log
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-
-# Generated data
-data/
-output/
-
-# IDE
-.vscode/
-.idea/
-
-# Operating system
-.DS_Store
-EOF
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/*.tfvars

@@ -1,0 +1,4 @@
+# Local development and tests. The Glue job runs on AWS Glue 4.0 (Spark) and
+# brings its own dependencies.
+pytest>=8.0
+boto3>=1.35,<2
