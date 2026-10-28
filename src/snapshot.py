@@ -7,6 +7,11 @@ import copy
 import json
 import re
 
+try:
+    from .validate import validate_metrics
+except ImportError:  # Glue imports the modules from the root of src.zip.
+    from validate import validate_metrics
+
 TABLE_PATHS = {
     "curated_customers": "curated/customers/",
     "curated_accounts": "curated/accounts/",
@@ -60,10 +65,7 @@ def register_partitions(glue, database, bucket, run_id, rows):
 
 
 def publish(s3, bucket, run_id, database, input_prefix, metrics):
-    if not metrics.get("counts_consistent"):
-        raise ValueError("Cannot publish inconsistent counts")
-    if metrics["input_count"] != metrics["accepted_count"] + metrics["rejected_count"]:
-        raise ValueError("Cannot publish inconsistent counts")
+    validate_metrics(metrics)
     receipt = {**metrics, "run_id": run_id, "database": database, "input_prefix": input_prefix,
                "data_prefix": f"snapshots/{run_id}/"}
     body = json.dumps(receipt, sort_keys=True).encode("utf-8")
@@ -76,8 +78,7 @@ def publish(s3, bucket, run_id, database, input_prefix, metrics):
 def complete_run(glue, s3, bucket, template_database, run_id, input_prefix, result, write_outputs, commit):
     """Keep the old publication intact if any preparation or write step fails."""
     metrics = result["metrics"]
-    if not metrics.get("counts_consistent"):
-        raise ValueError("Cannot publish inconsistent counts")
+    validate_metrics(metrics)
     database = create_catalog(glue, template_database, bucket, run_id)
     write_outputs()
     register_partitions(glue, database, bucket, run_id, result["transactions"][0])

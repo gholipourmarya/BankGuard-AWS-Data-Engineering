@@ -83,8 +83,7 @@ def compute_metrics(input_count, accepted_count, rejected_rows):
 
 
 def _system(row):
-    value = str(row.get("source_system", "")).strip()
-    return value or "(missing)"
+    return validate.source_system_label(row.get("source_system"))
 
 
 def metrics_by_source_system(transactions, valid, rejected):

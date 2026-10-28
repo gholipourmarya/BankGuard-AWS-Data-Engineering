@@ -18,6 +18,26 @@ def reasons_of(rejected):
     return [r["error_reasons"] for r in rejected]
 
 
+@pytest.mark.parametrize("control", ["\x00", "\x7f", "\u0085", "\u009f"])
+@pytest.mark.parametrize("dataset,field", [
+    ("customers", "customer_id"), ("accounts", "account_id"), ("accounts", "customer_id"),
+    ("transactions", "transaction_id"), ("transactions", "account_id"),
+])
+def test_ids_reject_ascii_and_unicode_control_characters(control, dataset, field):
+    identifier = f"X{control}Y"
+    if dataset == "customers":
+        row = {"customer_id": identifier, "name": "Alice", "country": "DE", "_line": 2}
+        valid, rejected = validate.validate_customers([row])
+    elif dataset == "accounts":
+        row = {"account_id": "A1", "customer_id": "C1", "status": "Active", "_line": 2, field: identifier}
+        valid, rejected = validate.validate_accounts([row], {row["customer_id"]})
+    else:
+        row = tx(2, **{field: identifier})
+        valid, rejected = validate.validate_transactions([row], {row["account_id"]})
+    assert valid == []
+    assert reasons_of(rejected) == [[f"INVALID_{field.upper()}"]]
+
+
 def test_valid_transaction_is_accepted():
     valid, rejected = validate.validate_transactions([tx(2)], ACCOUNTS)
     assert len(valid) == 1 and rejected == []

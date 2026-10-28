@@ -11,6 +11,7 @@ of the input plus an ``error_reasons`` list; nothing is dropped silently, so
 """
 from datetime import datetime
 from decimal import Decimal, InvalidOperation, localcontext
+import unicodedata
 
 ALLOWED_CURRENCIES = {"EUR", "USD"}
 ALLOWED_TRANSACTION_TYPES = {"DEPOSIT", "WITHDRAWAL", "PAYMENT", "TRANSFER", "REFUND", "REVERSAL"}
@@ -24,6 +25,45 @@ ACCOUNT_FIELDS = ["account_id", "customer_id", "status"]
 CUSTOMER_FIELDS = ["customer_id", "name", "country"]
 
 _MISSING_MARKERS = {"", "null", "none", "nan", "n/a"}
+
+COUNT_FIELDS = ("input_count", "accepted_count", "rejected_count")
+
+
+def source_system_label(value):
+    """Group preserved source values consistently in metrics and Athena results."""
+    return (str(value).strip() if value is not None else "") or "(missing)"
+
+
+def _validate_counts(metrics):
+    if not isinstance(metrics, dict) or metrics.get("counts_consistent") is not True:
+        raise ValueError("Invalid snapshot counts_consistent flag")
+    counts = [metrics.get(field) for field in COUNT_FIELDS]
+    if any(type(count) is not int or count < 0 for count in counts):
+        raise ValueError("Snapshot counts must be non-negative integers")
+    if counts[0] != counts[1] + counts[2]:
+        raise ValueError("Snapshot input count differs from accepted plus rejected")
+
+
+def validate_metrics(metrics):
+    """Validate the total balance, every source balance and their reconciliation.
+
+    Used before publishing and when reading receipts locally and in Airflow.
+    Unknown/missing source systems remain valid group labels for rejected rows.
+    """
+    _validate_counts(metrics)
+    systems = metrics.get("by_source_system")
+    if not isinstance(systems, dict):
+        raise ValueError("Snapshot by_source_system must be an object")
+    for name, counts in systems.items():
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("Invalid source-system label")
+        try:
+            _validate_counts(counts)
+        except ValueError as exc:
+            raise ValueError(f"Invalid counts for source system {name!r}: {exc}") from exc
+    for field in COUNT_FIELDS:
+        if sum(counts[field] for counts in systems.values()) != metrics[field]:
+            raise ValueError(f"Source-system {field} sum differs from snapshot total")
 
 
 def is_missing(value):
@@ -60,7 +100,7 @@ def _missing_reasons(row, fields):
         "MISSING_" + f.upper() for f in fields if is_missing(row.get(f))]
     for field in fields:
         if field.endswith("_id") and not is_missing(row.get(field)):
-            if any(ord(char) < 32 or ord(char) == 127 for char in str(row[field]).strip()):
+            if any(unicodedata.category(char) == "Cc" for char in str(row[field]).strip()):
                 reasons.append("INVALID_" + field.upper())
     return reasons
 

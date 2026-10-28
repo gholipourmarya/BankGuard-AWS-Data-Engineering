@@ -66,7 +66,7 @@ Ein Datensatz kann mehrere Fehler haben; alle werden in `error_reasons` gespeich
 | Regel | Fehlercodes |
 | --- | --- |
 | Pflichtfelder vorhanden (leer und `NULL` zählen als fehlend) | `MISSING_<FELD>`, z. B. `MISSING_AMOUNT` |
-| IDs enthalten keine eingebetteten Steuerzeichen | `INVALID_CUSTOMER_ID`, `INVALID_ACCOUNT_ID`, `INVALID_TRANSACTION_ID` |
+| IDs enthalten keine eingebetteten ASCII-/Unicode-Steuerzeichen (Kategorie `Cc`) | `INVALID_CUSTOMER_ID`, `INVALID_ACCOUNT_ID`, `INVALID_TRANSACTION_ID` |
 | Eindeutige IDs: Die Zeile mit der **niedrigsten Zeilennummer** bleibt, spätere werden abgelehnt | `DUPLICATE_TRANSACTION_ID`, `DUPLICATE_ACCOUNT_ID`, `DUPLICATE_CUSTOMER_ID`, `DUPLICATE_CONFLICTING_CONTENT` |
 | Betrag passt exakt in `DECIMAL(18,2)`, Datum im Format `JJJJ-MM-TT` | `INVALID_AMOUNT`, `INVALID_DATE` |
 | Währung `EUR` oder `USD`, bekannte Transaktionsart und Herkunftssystem | `INVALID_CURRENCY`, `INVALID_TRANSACTION_TYPE`, `INVALID_SOURCE_SYSTEM` |
@@ -165,20 +165,87 @@ Optional und standardmäßig **aus**: Amazon MWAA (`enable_mwaa=true`). Für die
 ## Projektstruktur
 
 ```text
-src/            generate_data.py · validate.py · transform.py
-glue/           banking_etl.py (Glue-Job)
-lambda_fn/      start_glue_job.py (startet den Job, wenn die drei Dateien da sind)
-terraform/      Infrastruktur: s3 · kms · iam · glue · lambda · monitoring · github_oidc · mwaa
-sql/            daily_transactions · country_analysis · data_quality · rework_report · compare_csv_vs_parquet
-airflow/dags/   bankguard_pipeline.py (optional)
-scripts/        upload_dataset.py · current_snapshot.py · athena_scan_compare.py
-                deploy_release.py · cleanup_snapshot_catalogs.py · aws_terraform.py · verify_aws.py
-examples/       Beispiel mit 11 Zeilen
-tests/          test_validation · test_transform · test_problem_statement · test_lambda_trigger
-docs/           Datenmodell, Betrieb, Projektplan, Werkzeug-Übersicht
-.github/workflows/  ci.yml · deploy.yml
-Dockerfile · requirements.txt · pytest.ini
+BankGuard-AWS-Data-Engineering/
+├── src/
+│   ├── __init__.py
+│   ├── generate_data.py
+│   ├── snapshot.py
+│   ├── transform.py
+│   └── validate.py
+├── glue/
+│   └── banking_etl.py
+├── lambda_fn/
+│   ├── __init__.py
+│   ├── check_glue_runs.py
+│   └── start_glue_job.py
+├── terraform/
+│   ├── github_oidc.tf
+│   ├── glue.tf
+│   ├── iam.tf
+│   ├── kms.tf
+│   ├── lambda.tf
+│   ├── main.tf
+│   ├── monitoring.tf
+│   ├── mwaa.tf
+│   ├── outputs.tf
+│   ├── run_monitor.tf
+│   ├── s3.tf
+│   ├── variables.tf
+│   └── .terraform.lock.hcl
+├── sql/
+│   ├── compare_csv_vs_parquet.sql
+│   ├── country_analysis.sql
+│   ├── daily_transactions.sql
+│   ├── data_quality.sql
+│   └── rework_report.sql
+├── airflow/
+│   ├── dags/
+│   │   └── bankguard_pipeline.py
+│   └── requirements.txt
+├── scripts/
+│   ├── athena_scan_compare.py
+│   ├── aws_terraform.py
+│   ├── cleanup_snapshot_catalogs.py
+│   ├── current_snapshot.py
+│   ├── deploy_release.py
+│   ├── upload_dataset.py
+│   └── verify_aws.py
+├── examples/
+├── tests/
+│   ├── __init__.py
+│   ├── test_aws_scripts.py
+│   ├── test_glue_output.py
+│   ├── test_lambda_trigger.py
+│   ├── test_problem_statement.py
+│   ├── test_release_and_monitor.py
+│   ├── test_sdk_contract.py
+│   ├── test_snapshot_publication.py
+│   ├── test_terraform_credentials.py
+│   ├── test_transform.py
+│   └── test_validation.py
+├── docs/
+│   ├── cost-estimate.md
+│   ├── data-model.md
+│   ├── ihk-plan.md
+│   ├── operations.md
+│   ├── overview-en.md
+│   ├── structure.md
+│   ├── tool-map.md
+│   └── evidence/
+├── .github/
+│   └── workflows/
+│       ├── ci.yml
+│       └── deploy.yml
+├── .dockerignore
+├── .gitignore
+├── Dockerfile
+├── README.md
+├── README_ENG.md
+├── requirements.txt
+└── pytest.ini
 ```
+
+Die Übersicht zeigt Quellcode und Projektdokumentation. Generierte Daten, Ausgaben, lokale Umgebungen und Terraform-State sind ausgelassen.
 
 ## Tests
 

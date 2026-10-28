@@ -3,7 +3,7 @@
 # COST WARNING: an MWAA environment is billed per hour for as long as it exists, and the NAT
 # gateway in this file is billed per hour as well. Apply it to produce evidence (screenshot of
 # a successful DAG run), then run `terraform destroy` or re-apply with enable_mwaa=false.
-# Creation takes roughly 20-30 minutes. NOT YET APPLIED.
+# Deployed successfully on 2026-10-28; see docs/evidence/2026-10-28/airflow-environment.json.
 
 locals {
   mwaa_name = "${var.project_name}-airflow"
@@ -175,6 +175,17 @@ resource "aws_s3_object" "dag_config" {
     WORKGROUP = "${aws_athena_workgroup.bankguard.name}"
     DATABASE = "${aws_glue_catalog_database.bankguard.name}"
   EOT
+
+  depends_on = [aws_s3_bucket_versioning.mwaa]
+}
+
+# Use the same validation implementation in local scripts, Glue and Airflow.
+resource "aws_s3_object" "dag_validation" {
+  count  = var.enable_mwaa ? 1 : 0
+  bucket = aws_s3_bucket.mwaa[0].id
+  key    = "dags/bankguard_validation.py"
+  source = "${path.module}/../src/validate.py"
+  etag   = filemd5("${path.module}/../src/validate.py")
 
   depends_on = [aws_s3_bucket_versioning.mwaa]
 }
@@ -363,6 +374,7 @@ resource "aws_mwaa_environment" "airflow" {
   depends_on = [
     aws_s3_object.dag,
     aws_s3_object.dag_config,
+    aws_s3_object.dag_validation,
     aws_iam_role_policy.mwaa,
     aws_nat_gateway.mwaa,
     aws_route_table_association.private,

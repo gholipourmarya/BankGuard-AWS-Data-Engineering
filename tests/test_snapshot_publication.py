@@ -5,10 +5,12 @@ from unittest.mock import Mock
 
 import pytest
 
-from src import snapshot
+from src import snapshot, validate
 from scripts.current_snapshot import read_published_snapshot
 
-METRICS = {"input_count": 1, "accepted_count": 1, "rejected_count": 0, "counts_consistent": True}
+METRICS = {"input_count": 1, "accepted_count": 1, "rejected_count": 0, "counts_consistent": True,
+           "by_source_system": {"CARDS": {"input_count": 1, "accepted_count": 1,
+                                         "rejected_count": 0, "counts_consistent": True}}}
 
 
 class Catalog:
@@ -102,3 +104,115 @@ def test_existing_snapshot_database_is_never_rewritten():
                               {"metrics": METRICS, "transactions": ([], [])}, write, Mock())
     write.assert_not_called()
     assert storage.writes == []
+
+
+@pytest.mark.parametrize("counts", [(0, 0, 0), (1, 0, 1), (3, 2, 1)])
+def test_published_receipt_accepts_consistent_counts_including_zero(counts):
+    receipt = {"database": "template_jr_test", "run_id": "jr_test", "counts_consistent": True,
+               **dict(zip(("input_count", "accepted_count", "rejected_count"), counts))}
+    receipt["by_source_system"] = {"CARDS": {field: receipt[field] for field in
+                                           ("input_count", "accepted_count", "rejected_count", "counts_consistent")}}
+    storage = Storage()
+    storage.objects["published/current.json"] = json.dumps(receipt).encode()
+    assert read_published_snapshot(storage, "bucket") == receipt
+
+
+@pytest.mark.parametrize("changes", [
+    {"input_count": 100},
+    {"input_count": -1},
+    {"accepted_count": -1, "rejected_count": 2},
+    {"accepted_count": 2, "rejected_count": -1},
+    {"input_count": "1"},
+    {"accepted_count": True},
+    {"rejected_count": 0.0},
+    {"input_count": None},
+    {"counts_consistent": "false"},
+    {"counts_consistent": False},
+])
+def test_published_receipt_rejects_invalid_counts_even_with_success_flag(changes):
+    receipt = {"database": "template_jr_test", "run_id": "jr_test", **METRICS, **changes}
+    storage = Storage()
+    storage.objects["published/current.json"] = json.dumps(receipt).encode()
+    with pytest.raises(ValueError):
+        read_published_snapshot(storage, "bucket")
+
+
+@pytest.mark.parametrize("field", ["input_count", "accepted_count", "rejected_count"])
+def test_published_receipt_requires_all_three_counts(field):
+    receipt = {"database": "template_jr_test", "run_id": "jr_test", **METRICS}
+    del receipt[field]
+    storage = Storage()
+    storage.objects["published/current.json"] = json.dumps(receipt).encode()
+    with pytest.raises(ValueError, match="non-negative integers"):
+        read_published_snapshot(storage, "bucket")
+
+
+@pytest.mark.parametrize("receipt", [None, [], "invalid receipt"])
+def test_published_receipt_rejects_invalid_json_structure(receipt):
+    storage = Storage()
+    storage.objects["published/current.json"] = json.dumps(receipt).encode()
+    with pytest.raises(ValueError, match="Invalid published snapshot receipt"):
+        read_published_snapshot(storage, "bucket")
+
+
+def test_verification_rejects_inconsistent_receipt_before_calling_glue_or_athena():
+    from scripts.verify_aws import verify
+    receipt = {"database": "template_jr_test", "run_id": "jr_test", "counts_consistent": True,
+               "input_count": 100, "accepted_count": 0, "rejected_count": 1}
+    storage, glue, athena = Storage(), Mock(), Mock()
+    storage.objects["published/current.json"] = json.dumps(receipt).encode()
+    with pytest.raises(ValueError, match="input count differs"):
+        verify(storage, glue, athena, "bucket", "job", "workgroup")
+    assert glue.mock_calls == []
+    assert athena.mock_calls == []
+
+
+@pytest.mark.parametrize("changes", [
+    {"accepted_count": -1, "rejected_count": 2},
+    {"input_count": True},
+    {"counts_consistent": 1},
+    {"by_source_system": None},
+    {"by_source_system": []},
+    {"by_source_system": {}},
+    {"by_source_system": {"CARDS": {"input_count": 100, "accepted_count": 0,
+                                    "rejected_count": 1, "counts_consistent": True}}},
+    {"by_source_system": {"CARDS": {"input_count": 1, "accepted_count": -1,
+                                    "rejected_count": 2, "counts_consistent": True}}},
+    {"by_source_system": {"CARDS": {"input_count": 2, "accepted_count": 2,
+                                    "rejected_count": 0, "counts_consistent": True}}},
+    {"by_source_system": {"CARDS": {"input_count": 1, "accepted_count": True,
+                                    "rejected_count": 0, "counts_consistent": True}}},
+    {"by_source_system": {"CARDS": {"input_count": 1, "accepted_count": 1,
+                                    "rejected_count": 0.0, "counts_consistent": True}}},
+    {"by_source_system": {"CARDS": {"input_count": 1, "accepted_count": 1,
+                                    "rejected_count": 0, "counts_consistent": "true"}}},
+    {"by_source_system": {"CARDS": {"input_count": 1, "accepted_count": 1, "counts_consistent": True}}},
+    {"by_source_system": {"CARDS": "invalid"}},
+    {"by_source_system": {" ": METRICS["by_source_system"]["CARDS"]}},
+])
+@pytest.mark.parametrize("consumer", ["validation", "publish", "complete_run", "reader"])
+def test_all_snapshot_boundaries_reject_invalid_total_or_source_counts(changes, consumer):
+    metrics = {**copy.deepcopy(METRICS), **copy.deepcopy(changes)}
+    storage, catalog = Mock(), Mock()
+    if consumer == "reader":
+        receipt = {"database": "template_jr_test", "run_id": "jr_test", **metrics}
+        storage.get_object.return_value = {"Body": io.BytesIO(json.dumps(receipt).encode())}
+    with pytest.raises(ValueError):
+        if consumer == "validation":
+            validate.validate_metrics(metrics)
+        elif consumer == "publish":
+            snapshot.publish(storage, "bucket", "jr_test", "template_jr_test", "raw", metrics)
+        elif consumer == "complete_run":
+            snapshot.complete_run(catalog, storage, "bucket", "template", "jr_test", "raw",
+                                  {"metrics": metrics}, Mock(), Mock())
+        else:
+            read_published_snapshot(storage, "bucket")
+    assert catalog.mock_calls == []
+    storage.put_object.assert_not_called()
+
+
+def test_empty_pipeline_metrics_have_a_valid_empty_source_breakdown():
+    from src.transform import run_pipeline
+    metrics = run_pipeline([], [], [], "jr_empty", "now")["metrics"]
+    assert metrics["by_source_system"] == {}
+    validate.validate_metrics(metrics)

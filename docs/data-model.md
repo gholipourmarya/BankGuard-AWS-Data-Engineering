@@ -18,7 +18,7 @@ Datumswerte müssen existieren und nach Entfernen äußerer Leerzeichen genau `J
 
 Zulässige Währungen: `EUR`, `USD`. Kontostatus: `Active`, `Closed`. Herkunftssysteme: `CORE_BANKING`, `CARDS`, `ONLINE_BANKING`. Äußere Leerzeichen werden bei akzeptierten Zeichenketten entfernt, damit Fremdschlüssel in SQL übereinstimmen. Abgelehnte Zeilen behalten ihre ursprünglichen Werte.
 
-IDs dürfen nach Entfernen äußerer Leerzeichen keine Steuerzeichen enthalten. Eingebettete Zeilenumbrüche werden als `INVALID_CUSTOMER_ID`, `INVALID_ACCOUNT_ID` oder `INVALID_TRANSACTION_ID` abgelehnt. Mehrzeilige Namen bleiben zulässig; sie werden nicht in den Transaktions-CSV-Vergleich exportiert.
+IDs dürfen nach Entfernen äußerer Leerzeichen keine ASCII- oder Unicode-Steuerzeichen der Kategorie `Cc` enthalten (einschließlich `U+0085`). Eingebettete Zeilenumbrüche werden als `INVALID_CUSTOMER_ID`, `INVALID_ACCOUNT_ID` oder `INVALID_TRANSACTION_ID` abgelehnt. Mehrzeilige Namen bleiben zulässig; sie werden nicht in den Transaktions-CSV-Vergleich exportiert.
 
 Bei doppelten IDs ist die niedrigste Quellzeilennummer das Original. Alle späteren Vorkommen werden abgelehnt, auch wenn das Original selbst ungültig war. Abweichende Transaktionsinhalte erhalten zusätzlich `DUPLICATE_CONFLICTING_CONTENT`.
 

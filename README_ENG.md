@@ -148,7 +148,7 @@ Invalid CSV headers and CSV syntax errors explicitly stop the execution.
 | Validation Rule | Error Codes |
 |---|---|
 | Required fields must be present; empty values and `NULL` are treated as missing | `MISSING_<FIELD>`, e.g. `MISSING_AMOUNT` |
-| IDs must not contain embedded control characters | `INVALID_CUSTOMER_ID`, `INVALID_ACCOUNT_ID`, `INVALID_TRANSACTION_ID` |
+| IDs must not contain embedded ASCII/Unicode control characters (category `Cc`) | `INVALID_CUSTOMER_ID`, `INVALID_ACCOUNT_ID`, `INVALID_TRANSACTION_ID` |
 | IDs must be unique; the record with the lowest source line number is retained | `DUPLICATE_TRANSACTION_ID`, `DUPLICATE_ACCOUNT_ID`, `DUPLICATE_CUSTOMER_ID`, `DUPLICATE_CONFLICTING_CONTENT` |
 | Amount must fit exactly into `DECIMAL(18,2)`; date must use `YYYY-MM-DD` | `INVALID_AMOUNT`, `INVALID_DATE` |
 | Currency must be `EUR` or `USD`; transaction type and source system must be supported | `INVALID_CURRENCY`, `INVALID_TRANSACTION_TYPE`, `INVALID_SOURCE_SYSTEM` |
@@ -454,73 +454,87 @@ Instructions are available in:
 ## Project Structure
 
 ```text
-bankguard/
-│
+BankGuard-AWS-Data-Engineering/
 ├── src/
+│   ├── __init__.py
 │   ├── generate_data.py
-│   ├── validate.py
-│   └── transform.py
-│
+│   ├── snapshot.py
+│   ├── transform.py
+│   └── validate.py
 ├── glue/
 │   └── banking_etl.py
-│
 ├── lambda_fn/
+│   ├── __init__.py
+│   ├── check_glue_runs.py
 │   └── start_glue_job.py
-│
 ├── terraform/
-│   └── modules/
-│       ├── s3/
-│       ├── kms/
-│       ├── iam/
-│       ├── glue/
-│       ├── lambda/
-│       ├── monitoring/
-│       ├── github_oidc/
-│       └── mwaa/
-│
+│   ├── github_oidc.tf
+│   ├── glue.tf
+│   ├── iam.tf
+│   ├── kms.tf
+│   ├── lambda.tf
+│   ├── main.tf
+│   ├── monitoring.tf
+│   ├── mwaa.tf
+│   ├── outputs.tf
+│   ├── run_monitor.tf
+│   ├── s3.tf
+│   ├── variables.tf
+│   └── .terraform.lock.hcl
 ├── sql/
-│   ├── daily_transactions
-│   ├── country_analysis
-│   ├── data_quality
-│   ├── rework_report
-│   └── compare_csv_vs_parquet
-│
+│   ├── compare_csv_vs_parquet.sql
+│   ├── country_analysis.sql
+│   ├── daily_transactions.sql
+│   ├── data_quality.sql
+│   └── rework_report.sql
 ├── airflow/
-│   └── dags/
-│       └── bankguard_pipeline.py
-│
+│   ├── dags/
+│   │   └── bankguard_pipeline.py
+│   └── requirements.txt
 ├── scripts/
-│   ├── upload_dataset.py
-│   ├── current_snapshot.py
 │   ├── athena_scan_compare.py
+│   ├── aws_terraform.py
+│   ├── cleanup_snapshot_catalogs.py
+│   ├── current_snapshot.py
 │   ├── deploy_release.py
-│   └── cleanup_snapshot_catalogs.py
-│
+│   ├── upload_dataset.py
+│   └── verify_aws.py
 ├── examples/
-│
 ├── tests/
-│   ├── test_validation.py
-│   ├── test_transform.py
+│   ├── __init__.py
+│   ├── test_aws_scripts.py
+│   ├── test_glue_output.py
+│   ├── test_lambda_trigger.py
 │   ├── test_problem_statement.py
-│   └── test_lambda_trigger.py
-│
+│   ├── test_release_and_monitor.py
+│   ├── test_sdk_contract.py
+│   ├── test_snapshot_publication.py
+│   ├── test_terraform_credentials.py
+│   ├── test_transform.py
+│   └── test_validation.py
 ├── docs/
-│   ├── data-model.md
-│   ├── operations.md
-│   ├── ihk-plan.md
-│   ├── tool-map.md
 │   ├── cost-estimate.md
-│   └── overview-en.md
-│
+│   ├── data-model.md
+│   ├── ihk-plan.md
+│   ├── operations.md
+│   ├── overview-en.md
+│   ├── structure.md
+│   ├── tool-map.md
+│   └── evidence/
 ├── .github/
 │   └── workflows/
 │       ├── ci.yml
 │       └── deploy.yml
-│
+├── .dockerignore
+├── .gitignore
 ├── Dockerfile
+├── README.md
+├── README_ENG.md
 ├── requirements.txt
 └── pytest.ini
 ```
+
+This overview shows source code and project documentation. Generated data, outputs, local environments, and Terraform state are omitted.
 
 ### Main Components
 

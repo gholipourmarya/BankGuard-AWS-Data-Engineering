@@ -117,7 +117,10 @@ def test_snapshot_cleanup_is_read_only_by_default_and_protects_current_database(
     from scripts.cleanup_snapshot_catalogs import cleanup
     storage = Storage()
     storage.data["published/current.json"] = json.dumps({
-        "database": "custom_jr_current", "run_id": "jr_current", "counts_consistent": True}).encode()
+        "database": "custom_jr_current", "run_id": "jr_current", "counts_consistent": True,
+        "input_count": 1, "accepted_count": 1, "rejected_count": 0,
+        "by_source_system": {"CARDS": {"input_count": 1, "accepted_count": 1,
+                                      "rejected_count": 0, "counts_consistent": True}}}).encode()
     glue = Mock()
     glue.get_paginator.return_value.paginate.return_value = [{"DatabaseList": [
         {"Name": "custom_jr_old"}, {"Name": "custom_jr_current"}, {"Name": "another_project_jr_old"}]}]
@@ -132,7 +135,10 @@ def test_cleanup_of_different_project_never_removes_publication_pointer():
     from scripts.cleanup_snapshot_catalogs import cleanup
     storage = Mock()
     storage.get_object.return_value = {"Body": io.BytesIO(json.dumps({
-        "database": "original_jr_current", "run_id": "jr_current", "counts_consistent": True}).encode())}
+        "database": "original_jr_current", "run_id": "jr_current", "counts_consistent": True,
+        "input_count": 1, "accepted_count": 1, "rejected_count": 0,
+        "by_source_system": {"CARDS": {"input_count": 1, "accepted_count": 1,
+                                      "rejected_count": 0, "counts_consistent": True}}}).encode())}
     glue = Mock()
     glue.get_paginator.return_value.paginate.return_value = [{"DatabaseList": [{"Name": "original_jr_current"}]}]
     assert cleanup(glue, storage, "bucket", "different", delete=True, include_published=True) == []

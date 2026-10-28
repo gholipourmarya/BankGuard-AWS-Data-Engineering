@@ -1,8 +1,10 @@
+import json
+import sys
 from unittest.mock import Mock
 
 import pytest
 
-from scripts import athena_scan_compare as compare, upload_dataset
+from scripts import athena_scan_compare as compare, upload_dataset, verify_aws
 
 
 def test_uploader_releases_marker_only_after_all_three_files(tmp_path):
@@ -73,3 +75,98 @@ def test_athena_timeout_cancels_query(monkeypatch):
     with pytest.raises(TimeoutError):
         compare.run(athena, "SELECT 1", "group", "database")
     athena.stop_query_execution.assert_called_once_with(QueryExecutionId="q1")
+
+
+def prepare_snapshot_verification(monkeypatch, accepted, rejected, day):
+    receipt = {"database": "snapshot_db", "run_id": "jr_test", "counts_consistent": True,
+               "input_count": accepted + rejected, "accepted_count": accepted,
+               "rejected_count": rejected, "by_source_system": {"CARDS": {
+                   "input_count": accepted + rejected, "accepted_count": accepted,
+                   "rejected_count": rejected, "counts_consistent": True}}}
+    monkeypatch.setattr(verify_aws, "read_published_snapshot", lambda *_: receipt)
+    glue = Mock()
+    glue.get_job_run.return_value = {"JobRun": {"JobRunState": "SUCCEEDED"}}
+    monkeypatch.setattr(verify_aws, "build_queries", lambda _: {"CSV": "FORMAT_CSV", "Parquet": "FORMAT_PARQUET"})
+
+    def query(athena, sql, workgroup, database):
+        if "AS accepted" in sql:
+            return {}, [("accepted", "rejected"), (str(accepted), str(rejected))]
+        if "MIN(transaction_date)" in sql:
+            return {}, [("day",), (day,)]
+        if sql.startswith("FORMAT_"):
+            return {"DataScannedInBytes": 100}, [("currency", "count", "amount"), ("EUR", "1", "1.00")]
+        if "SELECT source_system, COUNT(*) FROM curated_transactions" in sql:
+            return {}, [("source_system", "count")] + ([("CARDS", str(accepted))] if accepted else [])
+        if "SELECT source_system, COUNT(*) FROM rejected_transactions" in sql:
+            return {}, [("source_system", "count")] + ([("CARDS", str(rejected))] if rejected else [])
+        return {}, []
+
+    monkeypatch.setattr(verify_aws, "run", query)
+    return glue
+
+
+@pytest.mark.parametrize("accepted,rejected", [(0, 1), (0, 0), (1, 0)])
+def test_verification_preserves_valid_snapshots_without_fabricating_empty_measurements(monkeypatch, accepted, rejected):
+    day = "2026-01-01" if accepted else None
+    glue = prepare_snapshot_verification(monkeypatch, accepted, rejected, day)
+    report = verify_aws.verify(Mock(), glue, Mock(), "bucket", "job", "group")
+    assert report["counts_verified"] is True
+    assert report["comparison_day"] == day
+    if accepted:
+        assert report["comparison_status"] == "completed"
+        assert {"CSV", "Parquet"} <= report["queries"].keys()
+    else:
+        assert report["comparison_status"] == "skipped"
+        assert report["comparison_skip_reason"]
+        assert not {"CSV", "Parquet"} & report["queries"].keys()
+
+
+def test_verification_still_rejects_missing_dates_for_accepted_transactions(monkeypatch):
+    glue = prepare_snapshot_verification(monkeypatch, 1, 0, None)
+    with pytest.raises(ValueError, match="no comparison date"):
+        verify_aws.verify(Mock(), glue, Mock(), "bucket", "job", "group")
+
+
+def test_verification_cli_saves_zero_accepted_snapshot_successfully(monkeypatch, tmp_path, capsys):
+    import boto3
+    glue = prepare_snapshot_verification(monkeypatch, 0, 1, None)
+    monkeypatch.setattr(boto3, "client", lambda service: glue if service == "glue" else Mock())
+    target = tmp_path / "evidence.json"
+    monkeypatch.setattr(sys, "argv", ["verify_aws.py", "bucket", "--out", str(target)])
+    assert verify_aws.main() == 0
+    report = json.loads(target.read_text())
+    assert report["counts_verified"] is True
+    assert report["comparison_status"] == "skipped"
+    assert "Format comparison skipped" in capsys.readouterr().out
+
+
+def test_verification_rejects_wrong_rejected_source_distribution(monkeypatch):
+    glue = prepare_snapshot_verification(monkeypatch, 0, 1, None)
+    original_run = verify_aws.run
+
+    def run(athena, sql, *args):
+        if "SELECT source_system, COUNT(*) FROM rejected_transactions" in sql:
+            return {}, [("source_system", "count"), ("ONLINE_BANKING", "1")]
+        return original_run(athena, sql, *args)
+
+    monkeypatch.setattr(verify_aws, "run", run)
+    with pytest.raises(ValueError, match="rejected source-system counts differ"):
+        verify_aws.verify(Mock(), glue, Mock(), "bucket", "job", "group")
+
+
+@pytest.mark.parametrize("missing", [False, True])
+def test_verification_normalizes_rejected_source_labels_like_pipeline_metrics(monkeypatch, missing):
+    glue = prepare_snapshot_verification(monkeypatch, 0, 2, None)
+    receipt = verify_aws.read_published_snapshot(None, None)
+    if missing:
+        receipt["by_source_system"]["(missing)"] = receipt["by_source_system"].pop("CARDS")
+    original_run = verify_aws.run
+
+    def run(athena, sql, *args):
+        if "SELECT source_system, COUNT(*) FROM rejected_transactions" in sql:
+            groups = [(None, "1"), (" \t ", "1")] if missing else [(" CARDS ", "1"), ("CARDS", "1")]
+            return {}, [("source_system", "count"), *groups]
+        return original_run(athena, sql, *args)
+
+    monkeypatch.setattr(verify_aws, "run", run)
+    assert verify_aws.verify(Mock(), glue, Mock(), "bucket", "job", "group")["counts_verified"] is True

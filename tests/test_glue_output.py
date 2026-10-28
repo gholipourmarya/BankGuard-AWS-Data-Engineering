@@ -9,7 +9,7 @@ from unittest.mock import Mock
 
 from botocore.exceptions import IncompleteReadError
 from botocore.response import StreamingBody
-from src import snapshot, transform
+from src import snapshot, transform, validate
 
 import pytest
 
@@ -101,10 +101,13 @@ def test_airflow_accepts_receipt_for_current_run_including_zero_rows(accepted, r
     hook = Mock()
     hook.read_key.return_value = json.dumps({"run_id": "jr_current", "database": "custom_jr_current", "counts_consistent": True,
                                             "input_count": accepted + rejected,
-                                            "accepted_count": accepted, "rejected_count": rejected})
+                                            "accepted_count": accepted, "rejected_count": rejected,
+                                            "by_source_system": {"CARDS": {"input_count": accepted + rejected,
+                                                "accepted_count": accepted, "rejected_count": rejected,
+                                                "counts_consistent": True}}})
     verify = load_function("airflow/dags/bankguard_pipeline.py", "verify_outputs", {
         "S3Hook": Mock(return_value=hook), "BUCKET": "bucket", "json": json,
-        "AirflowFailException": RuntimeError, "DATABASE": "custom",
+        "AirflowFailException": RuntimeError, "DATABASE": "custom", "validate_metrics": validate.validate_metrics,
     })
     verify(Mock(xcom_pull=Mock(return_value="jr_current")))
     hook.read_key.assert_called_once_with(key="runs/jr_current/metrics.json", bucket_name="bucket")
@@ -115,7 +118,26 @@ def test_airflow_rejects_old_run_receipt():
     hook.read_key.return_value = json.dumps({"run_id": "jr_old"})
     verify = load_function("airflow/dags/bankguard_pipeline.py", "verify_outputs", {
         "S3Hook": Mock(return_value=hook), "BUCKET": "bucket", "json": json,
-        "AirflowFailException": RuntimeError, "DATABASE": "custom",
+        "AirflowFailException": RuntimeError, "DATABASE": "custom", "validate_metrics": validate.validate_metrics,
+    })
+    with pytest.raises(RuntimeError, match="inconsistent"):
+        verify(Mock(xcom_pull=Mock(return_value="jr_current")))
+
+
+@pytest.mark.parametrize("source_failure", [False, True])
+def test_airflow_rejects_negative_counts_and_inconsistent_source_receipts(source_failure):
+    counts = {"input_count": 1, "accepted_count": 1, "rejected_count": 0, "counts_consistent": True}
+    metrics = {**counts, "run_id": "jr_current", "database": "custom_jr_current",
+               "by_source_system": {"CARDS": dict(counts)}}
+    if source_failure:
+        metrics["by_source_system"]["CARDS"].update(input_count=100, accepted_count=0, rejected_count=1)
+    else:
+        metrics.update(accepted_count=-1, rejected_count=2)
+    hook = Mock()
+    hook.read_key.return_value = json.dumps(metrics)
+    verify = load_function("airflow/dags/bankguard_pipeline.py", "verify_outputs", {
+        "S3Hook": Mock(return_value=hook), "BUCKET": "bucket", "json": json,
+        "AirflowFailException": RuntimeError, "DATABASE": "custom", "validate_metrics": validate.validate_metrics,
     })
     with pytest.raises(RuntimeError, match="inconsistent"):
         verify(Mock(xcom_pull=Mock(return_value="jr_current")))

@@ -6,7 +6,7 @@ import tempfile
 
 import pytest
 
-from src import generate_data, transform
+from src import generate_data, transform, validate
 
 
 def _run(data_dir, run_id="r1"):
@@ -195,3 +195,14 @@ def test_conflicting_refund_duplicates_do_not_create_unreported_amount_errors(tr
     conflicting = [row for row in rejected if "DUPLICATE_CONFLICTING_CONTENT" in row["error_reasons"]]
     assert conflicting
     assert all(validate.parse_amount(row["amount"]) == validate.parse_amount("-1.00") for row in conflicting)
+
+
+@pytest.mark.parametrize("source", [None, "", " \t "])
+def test_missing_source_labels_are_consistent_for_rejected_rows(source):
+    row = {"transaction_id": "T1", "account_id": "A1", "amount": "1.00", "currency": "EUR",
+           "transaction_type": "PAYMENT", "transaction_date": "2026-01-01", "source_system": source, "_line": 2}
+    result = transform.run_pipeline([], [], [row], "jr_test", "now")
+    assert result["metrics"]["by_source_system"] == {"(missing)": {
+        "input_count": 1, "accepted_count": 0, "rejected_count": 1,
+        "counts_consistent": True, "pass_rate_percent": 0.0}}
+    validate.validate_metrics(result["metrics"])
