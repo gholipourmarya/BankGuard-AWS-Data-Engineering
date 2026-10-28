@@ -197,9 +197,11 @@ This helps each source system identify which data needs correction.
 | Component | Status |
 |---|---|
 | Synthetic data generator, validation rules, processing, rework report, regression tests | **Implemented and executed locally** |
-| Terraform, AWS Glue job, Athena tables, SQL | Terraform validated locally; **not yet executed on AWS** |
-| Monitoring (CloudWatch, email alerts), encryption, file-triggered execution, GitHub Actions, Airflow | Written; **not yet executed** |
-| AWS results, execution times, and screenshots | Pending |
+| Terraform, AWS Glue job, Athena tables, SQL | **Executed and verified on AWS on October 28, 2026** |
+| CloudWatch, SNS, KMS and file-triggered execution | Verified on AWS; EventBridge/SNS reported delivery for an intentional failure |
+| GitHub Actions | [CI passed](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40662802001); [OIDC deployment passed](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40739499524) on `feature/bankguard` |
+| Airflow / MWAA | Optional; no real Airflow/MWAA execution yet |
+| AWS evidence | [Query results, IDs and timings](docs/evidence/2026-10-28/aws-verification.json), logs and an exported CloudWatch chart saved |
 
 Tests were executed using:
 
@@ -296,7 +298,7 @@ docker build -t bankguard .
 docker run --rm bankguard
 ```
 
-**Status:** Docker has not yet been built or executed.
+**Status:** Built and executed successfully on October 28, 2026: 113 tests and full data processing passed.
 
 ## Results
 
@@ -322,11 +324,11 @@ The valid-record percentages across source systems range from approximately 92.7
 
 This similarity results from the uniform distribution of injected errors and does not represent real banking systems.
 
-**AWS execution results are not yet available.**
+**AWS results, October 28, 2026:** 51,000 input, 47,500 accepted, 3,500 rejected; Glue execution time 135 seconds using two G.1X workers. Athena confirmed the counts. See [evidence](docs/evidence/2026-10-28/aws-verification.json) and [costs](docs/cost-estimate.md).
 
 ## Deploying to AWS
 
-**Not yet verified:** The following deployment procedure has not been executed. Minor adjustments may be required during the first deployment.
+Verified in `eu-central-1` on October 28, 2026. For AWS CLI login credentials with the pinned Terraform provider, use `python scripts/aws_terraform.py` from the project root; see [operations](docs/operations.md).
 
 ### Prerequisites
 
@@ -617,7 +619,7 @@ Failed or expired executions require an intentional restart.
 
 ### AWS Verification
 
-AWS execution and Amazon MWAA have not yet been verified.
+The central AWS pipeline is verified. Optional Airflow/MWAA remains unverified. SNS reports notification delivery; personal inbox receipt needs separate confirmation.
 
 ### Code Releases
 

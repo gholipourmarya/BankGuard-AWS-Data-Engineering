@@ -1,8 +1,9 @@
 """Start one queued Glue run per completed raw/batches/<id>/ready.json package.
 
-The uploader writes three immutable CSVs first and ready.json last. Terraform
-serializes this Lambda (reserved concurrency 1); job history deduplicates marker
-redeliveries. Glue's queue retains starts while another snapshot is running.
+The uploader writes three immutable CSVs first and ready.json last. Glue job
+history suppresses marker redeliveries after submission; concurrent deliveries
+can race and submit duplicates. Glue's queue retains starts while another
+snapshot is running.
 Failed/expired runs require an explicit operator retry; they are never reported
 as successful. Job history is retained by Glue for 365 days; package IDs must
 never be reused. This is bounded deduplication, not an exactly-once guarantee.

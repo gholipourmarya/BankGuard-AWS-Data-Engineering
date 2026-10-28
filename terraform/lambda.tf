@@ -64,14 +64,15 @@ resource "aws_iam_role_policy" "trigger" {
 }
 
 resource "aws_lambda_function" "start_glue_job" {
-  function_name                  = "${var.project_name}-start-glue-job"
-  role                           = aws_iam_role.trigger.arn
-  runtime                        = "python3.12"
-  handler                        = "start_glue_job.handler"
-  filename                       = data.archive_file.start_glue_job.output_path
-  source_code_hash               = data.archive_file.start_glue_job.output_base64sha256
-  timeout                        = 60
-  reserved_concurrent_executions = 1
+  function_name    = "${var.project_name}-start-glue-job"
+  role             = aws_iam_role.trigger.arn
+  runtime          = "python3.12"
+  handler          = "start_glue_job.handler"
+  filename         = data.archive_file.start_glue_job.output_path
+  source_code_hash = data.archive_file.start_glue_job.output_base64sha256
+  timeout          = 60
+  # Use the shared account pool; small account quotas can reject reservations.
+  reserved_concurrent_executions = -1
 
   environment {
     variables = {

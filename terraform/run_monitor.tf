@@ -47,14 +47,15 @@ resource "aws_iam_role_policy" "run_monitor" {
 }
 
 resource "aws_lambda_function" "run_monitor" {
-  function_name                  = "${var.project_name}-check-glue-runs"
-  role                           = aws_iam_role.run_monitor.arn
-  runtime                        = "python3.12"
-  handler                        = "check_glue_runs.handler"
-  filename                       = data.archive_file.run_monitor.output_path
-  source_code_hash               = data.archive_file.run_monitor.output_base64sha256
-  timeout                        = 120
-  reserved_concurrent_executions = 1
+  function_name    = "${var.project_name}-check-glue-runs"
+  role             = aws_iam_role.run_monitor.arn
+  runtime          = "python3.12"
+  handler          = "check_glue_runs.handler"
+  filename         = data.archive_file.run_monitor.output_path
+  source_code_hash = data.archive_file.run_monitor.output_base64sha256
+  timeout          = 120
+  # Use the shared account pool; small account quotas can reject reservations.
+  reserved_concurrent_executions = -1
   environment {
     variables = {
       BUCKET        = aws_s3_bucket.lake.bucket

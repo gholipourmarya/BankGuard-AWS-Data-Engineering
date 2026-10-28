@@ -91,9 +91,11 @@ Beispiel eines abgelehnten Datensatzes:
 | Teil | Stand |
 | --- | --- |
 | Testdaten-Generator, Prüfregeln, Verarbeitung, Nacharbeits-Bericht, Regressionstests | **Fertig und lokal ausgeführt** |
-| Terraform, Glue-Job, Athena-Tabellen, SQL | Terraform lokal validiert, **noch nicht auf AWS ausgeführt** |
-| Überwachung (CloudWatch, Alarm per E-Mail), Verschlüsselung, Start bei neuen Dateien, GitHub Actions, Airflow | Geschrieben, **noch nicht ausgeführt** |
-| Ergebnisse, Laufzeiten und Screenshots von AWS | Offen |
+| Terraform, Glue-Job, Athena-Tabellen, SQL | **Auf AWS ausgeführt und am 28.10.2026 geprüft** |
+| CloudWatch, SNS, Verschlüsselung und automatischer Dateistart | **Auf AWS geprüft; Fehleralarm über EventBridge/SNS zugestellt** |
+| GitHub Actions | [CI erfolgreich](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40662802001); [OIDC-Deployment erfolgreich](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40739499524) auf `feature/bankguard` |
+| Airflow / MWAA | Optional; noch kein echter Airflow-/MWAA-Lauf |
+| AWS-Nachweise | [Messwerte, Query-IDs, Logs und CloudWatch-Diagramm](docs/evidence/2026-10-28/aws-verification.json) gesichert |
 
 Die Tests wurden mit `pytest -q` ausgeführt. Die aktuelle Anzahl steht in dessen Ausgabe. Es wird nichts als AWS-Ergebnis ausgegeben, was nicht gemessen wurde.
 
@@ -120,7 +122,7 @@ pytest -q
 
 Optionen des Generators: `--transactions N`, `--seed N`, `--out ORDNER`. Er speichert, welche Fehler eingebaut wurden. Daran messen die Tests, ob die Prüfung alle findet.
 
-Mit Docker: `docker build -t bankguard . && docker run --rm bankguard` (noch nicht gebaut oder ausgeführt).
+Mit Docker: `docker build -t bankguard . && docker run --rm bankguard` (am 28.10.2026 erfolgreich gebaut und ausgeführt: 113 Tests sowie vollständige Datenverarbeitung).
 
 ## Ergebnisse
 
@@ -135,11 +137,11 @@ Lokaler Lauf mit 51.000 Transaktionen (Startwert 42):
 | Gefunden / übersehen / falsch gemeldet | 3.750 / 0 / 0 |
 | Dauer der Prüfung | etwa 3,6 Sekunden im aktuellen lokalen Prüflauf |
 
-Das zeigt, dass die Regeln jeden Fehler finden, den der Generator erzeugt. Es beweist nicht, dass sie jeden Fehler in echten Daten finden. Die Fehlerraten pro Herkunftssystem sind ähnlich (92,7 bis 93,3 %), weil die Fehler gleichmäßig eingespielt werden; das sagt nichts über echte Systeme. **Ergebnisse von AWS gibt es noch nicht.**
+Das zeigt, dass die Regeln jeden Fehler finden, den der Generator erzeugt. Es beweist nicht, dass sie jeden Fehler in echten Daten finden. Die Fehlerraten pro Herkunftssystem sind ähnlich (92,7 bis 93,3 %), weil die Fehler gleichmäßig eingespielt werden; das sagt nichts über echte Systeme. **AWS-Lauf vom 28.10.2026:** ebenfalls 51.000 Eingang, 47.500 gültig und 3.500 abgelehnt; Glue-Ausführungszeit 135 Sekunden bei zwei G.1X-Workern. Athena bestätigt die Anzahlen. [Nachweise](docs/evidence/2026-10-28/aws-verification.json), [Formatvergleich und Kosten](docs/cost-estimate.md).
 
 ## Auf AWS bereitstellen
 
-*Nicht verifiziert: Dieser Weg wurde noch nicht ausgeführt, kleine Korrekturen beim ersten Lauf sind zu erwarten.*
+Am 28.10.2026 in `eu-central-1` ausgeführt. Ein neuer Paket-Upload startete Lambda und Glue automatisch; Athena-Berichte und der Fehlerfall wurden geprüft. Für AWS-CLI-Login-Sitzungen mit dem gepinnten Terraform-Provider siehe [Betrieb](docs/operations.md).
 
 Voraussetzungen: AWS-Konto, konfigurierte AWS CLI, Terraform, Rechte für S3, Glue, IAM, Athena, SNS, EventBridge und Budgets.
 
@@ -170,7 +172,7 @@ terraform/      Infrastruktur: s3 · kms · iam · glue · lambda · monitoring 
 sql/            daily_transactions · country_analysis · data_quality · rework_report · compare_csv_vs_parquet
 airflow/dags/   bankguard_pipeline.py (optional)
 scripts/        upload_dataset.py · current_snapshot.py · athena_scan_compare.py
-                deploy_release.py · cleanup_snapshot_catalogs.py
+                deploy_release.py · cleanup_snapshot_catalogs.py · aws_terraform.py · verify_aws.py
 examples/       Beispiel mit 11 Zeilen
 tests/          test_validation · test_transform · test_problem_statement · test_lambda_trigger
 docs/           Datenmodell, Betrieb, Projektplan, Werkzeug-Übersicht
@@ -192,7 +194,7 @@ Automatische Tests; die aktuelle Anzahl zeigt `pytest -q`. `tests/test_problem_s
 
 ## Bekannte Grenzen
 
-Der veröffentlichte Snapshot wird über ein einzelnes S3-Objekt ausgewählt. Dieses einmal auflösen und die ausgewählte Snapshot-Datenbank für alle zusammengehörigen Abfragen verwenden. Alte Snapshots und ihre Katalogdatenbanken bleiben bis zur bewussten Bereinigung bestehen. Die Validierung sammelt die kleinen Demo-Dateien im Arbeitsspeicher; große Datenmengen benötigen verteilte Regeln. Paket-IDs dürfen nicht wiederverwendet werden. Die Deduplizierung ist auf die Glue-Laufhistorie begrenzt; fehlgeschlagene oder abgelaufene Läufe erfordern einen bewussten Neustart. AWS-Ausführung und MWAA sind noch nicht verifiziert.
+Der veröffentlichte Snapshot wird über ein einzelnes S3-Objekt ausgewählt. Dieses einmal auflösen und die ausgewählte Snapshot-Datenbank für alle zusammengehörigen Abfragen verwenden. Alte Snapshots und ihre Katalogdatenbanken bleiben bis zur bewussten Bereinigung bestehen. Die Validierung sammelt die kleinen Demo-Dateien im Arbeitsspeicher; große Datenmengen benötigen verteilte Regeln. Paket-IDs dürfen nicht wiederverwendet werden. Die Deduplizierung ist auf die Glue-Laufhistorie begrenzt; fehlgeschlagene oder abgelaufene Läufe erfordern einen bewussten Neustart. Der zentrale AWS-Ablauf ist verifiziert; Airflow und MWAA bleiben optional und ungeprüft. Die SNS-Metrik bestätigt eine Zustellung; die Sichtbarkeit im persönlichen E-Mail-Postfach ist separat zu bestätigen.
 
 Code-Releases liegen unter einer Inhalts-Hash-ID; Skript und Bibliothek werden erst nach vollständigem Upload gemeinsam umgeschaltet. Ein zusätzlicher Prüflauf kontrolliert alle fünf Minuten die Glue-Zustände ERROR und EXPIRED.
 

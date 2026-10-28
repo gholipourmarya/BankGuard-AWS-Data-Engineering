@@ -40,7 +40,7 @@ def run(athena, sql, workgroup, database, timeout=300):
             for page in athena.get_paginator("get_query_results").paginate(QueryExecutionId=qid):
                 rows.extend(tuple(cell.get("VarCharValue") for cell in row["Data"])
                             for row in page["ResultSet"]["Rows"])
-            return execution["Statistics"], rows
+            return {**execution["Statistics"], "QueryExecutionId": qid}, rows
         if time.monotonic() >= deadline:
             athena.stop_query_execution(QueryExecutionId=qid)
             raise TimeoutError(f"Athena query {qid} exceeded {timeout} seconds")

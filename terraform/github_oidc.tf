@@ -4,9 +4,10 @@
 # It may pass only that job's fixed execution role; resource creation stays with Terraform.
 
 locals {
-  github_enabled      = var.github_repository != ""
-  create_oidc         = local.github_enabled && var.github_oidc_provider_arn == ""
-  github_provider_arn = var.github_oidc_provider_arn != "" ? var.github_oidc_provider_arn : one(aws_iam_openid_connect_provider.github[*].arn)
+  github_enabled        = var.github_repository != ""
+  create_oidc           = local.github_enabled && var.github_oidc_provider_arn == ""
+  github_provider_arn   = var.github_oidc_provider_arn != "" ? var.github_oidc_provider_arn : one(aws_iam_openid_connect_provider.github[*].arn)
+  github_subject_prefix = var.github_oidc_subject_prefix != "" ? var.github_oidc_subject_prefix : "repo:${var.github_repository}"
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
@@ -33,11 +34,11 @@ data "aws_iam_policy_document" "github_trust" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # Only workflows running on the main branch of this repository may assume the role.
+    # Limit deployment to one explicitly selected branch of this repository.
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/main"]
+      values   = ["${local.github_subject_prefix}:ref:refs/heads/${var.github_deploy_branch}"]
     }
   }
 }

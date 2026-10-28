@@ -40,6 +40,18 @@ variable "github_oidc_provider_arn" {
   default     = ""
 }
 
+variable "github_deploy_branch" {
+  description = "Only this branch of github_repository may assume the deployment role"
+  type        = string
+  default     = "main"
+}
+
+variable "github_oidc_subject_prefix" {
+  description = "Exact repo:OWNER@ID/REPO@ID prefix returned by GitHub OIDC settings (empty = legacy name format)"
+  type        = string
+  default     = ""
+}
+
 variable "enable_mwaa" {
   description = "Create the Amazon MWAA environment with its VPC and NAT gateway. Billed hourly while it exists: apply for evidence, then destroy"
   type        = bool

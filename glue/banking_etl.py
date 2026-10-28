@@ -57,9 +57,13 @@ def read_raw_csv(name):
     fields = {"customers.csv": transform.validate.CUSTOMER_FIELDS,
               "accounts.csv": transform.validate.ACCOUNT_FIELDS,
               "transactions.csv": transform.validate.TRANSACTION_FIELDS}
-    with s3.get_object(Bucket=BUCKET, Key=f"{INPUT_PREFIX}/{name}")["Body"] as body:
-        with io.TextIOWrapper(body, encoding="utf-8-sig", newline="") as stream:
-            return transform.parse_csv_rows(stream, fields[name])
+    key = f"{INPUT_PREFIX}/{name}"
+    log("reading_csv", bucket=BUCKET, key=key)
+    response = s3.get_object(Bucket=BUCKET, Key=key)
+    with io.TextIOWrapper(response["Body"], encoding="utf-8-sig", newline="") as stream:
+        rows = transform.parse_csv_rows(stream, fields[name])
+    log("csv_loaded", file=name, rows=len(rows))
+    return rows
 
 
 def write_parquet(rows, fields, name, partition_by=None):

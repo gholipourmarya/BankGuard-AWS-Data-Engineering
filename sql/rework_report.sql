@@ -1,6 +1,6 @@
 -- Select the snapshot database returned by scripts/current_snapshot.py in the Athena editor.
 -- What to send back to which source system: one row per system and rejection reason.
--- A record with several reasons appears once per reason. Not yet run on Athena.
+-- A record with several reasons appears once per reason. Verified on Athena on 2026-10-28; see docs/evidence/.
 SELECT
     source_system,
     reason,

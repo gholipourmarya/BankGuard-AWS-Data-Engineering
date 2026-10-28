@@ -2,11 +2,14 @@
 import ast
 import copy
 from decimal import Decimal
+import io
 import json
 from pathlib import Path
 from unittest.mock import Mock
 
-from src import snapshot
+from botocore.exceptions import IncompleteReadError
+from botocore.response import StreamingBody
+from src import snapshot, transform
 
 import pytest
 
@@ -19,6 +22,31 @@ def load_function(relative_path, name, namespace):
     function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == name)
     exec(compile(ast.Module(body=[function], type_ignores=[]), str(path), "exec"), namespace)
     return namespace[name]
+
+
+@pytest.mark.parametrize("failure", [None, "invalid_header", "truncated_body"])
+def test_s3_csv_reader_materializes_rows_and_closes_body(failure):
+    content = (b"wrong,header\n" if failure == "invalid_header" else
+               '\ufeffcustomer_id,name,country\r\nC1,"Ada\r\nLovelace",DE\r\n'.encode("utf-8"))
+    raw = io.BytesIO(content)
+    body = StreamingBody(raw, len(content) + (1 if failure == "truncated_body" else 0))
+    s3 = Mock()
+    s3.get_object.return_value = {"Body": body}
+    read = load_function("glue/banking_etl.py", "read_raw_csv", {
+        "s3": s3, "BUCKET": "test-bucket", "INPUT_PREFIX": "raw/batches/test",
+        "io": io, "transform": transform, "log": Mock(),
+    })
+    if failure == "invalid_header":
+        with pytest.raises(ValueError, match="Expected CSV columns"):
+            read("customers.csv")
+    elif failure == "truncated_body":
+        with pytest.raises(IncompleteReadError):
+            read("customers.csv")
+    else:
+        rows = read("customers.csv")
+        assert rows == [{"customer_id": "C1", "name": "Ada\r\nLovelace", "country": "DE", "_line": 2}]
+    assert raw.closed
+    s3.get_object.assert_called_once_with(Bucket="test-bucket", Key="raw/batches/test/customers.csv")
 
 
 def test_empty_rejected_output_overwrites_previous_run():

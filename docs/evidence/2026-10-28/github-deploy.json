@@ -1,0 +1,116 @@
+{
+  "attempt": 2,
+  "conclusion": "success",
+  "headSha": "091d4363f37d1007d8559e7544a9e02ff760d81c",
+  "jobs": [
+    {
+      "completedAt": "2026-10-28T17:57:10Z",
+      "conclusion": "success",
+      "databaseId": 123000495477,
+      "name": "deploy",
+      "startedAt": "2026-10-28T17:56:58Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-10-28T17:56:59Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-10-28T17:56:58Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-28T17:57:00Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "startedAt": "2026-10-28T17:56:59Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-28T17:57:00Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-python@v5",
+          "number": 3,
+          "startedAt": "2026-10-28T17:57:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-28T17:57:04Z",
+          "conclusion": "success",
+          "name": "Install test dependencies",
+          "number": 4,
+          "startedAt": "2026-10-28T17:57:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-28T17:57:05Z",
+          "conclusion": "success",
+          "name": "Run tests",
+          "number": 5,
+          "startedAt": "2026-10-28T17:57:04Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-28T17:57:06Z",
+          "conclusion": "success",
+          "name": "Run aws-actions/configure-aws-credentials@v4",
+          "number": 6,
+          "startedAt": "2026-10-28T17:57:05Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-28T17:57:08Z",
+          "conclusion": "success",
+          "name": "Publish immutable ETL release",
+          "number": 7,
+          "startedAt": "2026-10-28T17:57:06Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-28T17:57:08Z",
+          "conclusion": "skipped",
+          "name": "Start Glue job",
+          "number": 8,
+          "startedAt": "2026-10-28T17:57:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-28T17:57:08Z",
+          "conclusion": "success",
+          "name": "Post Run aws-actions/configure-aws-credentials@v4",
+          "number": 14,
+          "startedAt": "2026-10-28T17:57:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-28T17:57:08Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-python@v5",
+          "number": 15,
+          "startedAt": "2026-10-28T17:57:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-28T17:57:08Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 16,
+          "startedAt": "2026-10-28T17:57:08Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-28T17:57:08Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 17,
+          "startedAt": "2026-10-28T17:57:08Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40739499524/job/123000495477"
+    }
+  ],
+  "status": "completed",
+  "url": "https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40739499524"
+}
