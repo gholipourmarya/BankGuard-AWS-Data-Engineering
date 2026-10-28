@@ -1,7 +1,8 @@
 """AWS Glue 4.0 (Spark) job: validate raw CSVs, write curated Parquet and rejected JSON.
 
-NOT YET RUN ON AWS. Written against the Glue 4.0 API and the locally tested
-modules ``validate`` and ``transform`` (shipped via --extra-py-files src.zip).
+Executed successfully on AWS Glue 4.0 on 2026-10-28; evidence is saved in
+docs/evidence/2026-10-28/. Uses the shared ``validate`` and ``transform`` modules
+(shipped via --extra-py-files src.zip).
 
 Design notes
 - Each run reprocesses the complete CSV files in its input prefix (snapshot semantics).
