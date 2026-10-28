@@ -9,7 +9,7 @@ BankGuard untersucht, wie fehlerhafte synthetische Banktransaktionen vor einer A
 | Anforderungen | Pflichtfelder, Dublettenregel, Fremdschlüssel, Betrags- und Datumsregeln | Im Code und Datenmodell beschrieben |
 | Lokaler Prototyp | Generator, Validierung, Bilanz und Nacharbeit | Lokal getestet |
 | Infrastruktur | S3, Glue, KMS, Lambda, Athena und Monitoring | Auf AWS bereitgestellt; Konfiguration geprüft |
-| Integration | Paket-Upload, Glue-Lauf, SQL und Alarmtest | Erfolgs- und Fehlerlauf ausgeführt; EventBridge/SNS-Zustellung gemessen |
+| Integration | Paket-Upload, Glue-Lauf, SQL, Alarmtest und optionales MWAA | Erfolgs- und Fehlerlauf ausgeführt; EventBridge/SNS-Zustellung gemessen; MWAA-DAG und vier Tasks erfolgreich |
 | Auswertung | Fehlererkennung, Laufzeit und Formatvergleich | Lokale und AWS-Messwerte sowie Formatvergleich gesichert |
 | Dokumentation | Architektur, Betrieb, Kosten und Grenzen | Im Repository vorhanden |
 | Präsentation | Folien, Live-Demo oder Ersatznachweise | Sprechfolge und Demo-Befehle unten vorbereitet; persönlicher Probelauf ausstehend |
@@ -43,7 +43,7 @@ Ausgangsproblem und Projektziel erklären, danach die Architektur und die Reihen
 | 6. Nacharbeit und SQL | Herkunftssystem und sämtliche Fehlergründe zeigen; Athena-Ausgaben in [aws-verification.json](evidence/2026-10-28/aws-verification.json). |
 | 7. Betrieb und Fehler | Fehlende Datei erzeugt FAILED, bisheriger Snapshot bleibt unverändert, EventBridge/SNS melden Zustellung. [Fehlerlauf](evidence/2026-10-28/failure-run.json). |
 | 8. Wirtschaftlichkeit | 135 Sekunden Glue-Ausführung; 0,033 USD berechneter Glue-Listenpreis. Scanmenge CSV/Parquet 2.809.296/1.355 Byte; bei dieser Demo gleiche Mindestabrechnung. Weitere Infrastrukturkosten gesondert erklären. |
-| 9. Qualität und Grenzen | 113 lokale/Container-Tests; synthetische Daten, begrenzter Arbeitsspeicher und zeitlich begrenzte Deduplizierung. Optionales MWAA wurde nicht getestet. |
+| 9. Qualität und Grenzen | 113 lokale/Container-Tests; synthetische Daten, begrenzter Arbeitsspeicher und zeitlich begrenzte Deduplizierung. Ein manueller MWAA-DAG-Lauf ist mit vier erfolgreichen Tasks nachgewiesen; Langzeitbetrieb wurde nicht getestet. |
 | 10. Ergebnis und Ausblick | Funktionsfähige automatische Datenqualitätsprüfung; größere Datenmengen, belastbare Deduplizierung und längerfristige Betriebsmessung als Ausbau. |
 
 ## Kurze Demo ohne neue Cloud-Ressourcen

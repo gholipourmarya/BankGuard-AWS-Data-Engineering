@@ -94,7 +94,7 @@ Beispiel eines abgelehnten Datensatzes:
 | Terraform, Glue-Job, Athena-Tabellen, SQL | **Auf AWS ausgeführt und am 28.10.2026 geprüft** |
 | CloudWatch, SNS, Verschlüsselung und automatischer Dateistart | **Auf AWS geprüft; Fehleralarm über EventBridge/SNS zugestellt** |
 | GitHub Actions | [CI erfolgreich](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40662802001); [OIDC-Deployment erfolgreich](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40739499524) auf `feature/bankguard` |
-| Airflow / MWAA | Optional; noch kein echter Airflow-/MWAA-Lauf |
+| Airflow / MWAA | **Auf AWS ausgeführt:** `bankguard_pipeline` und alle vier Tasks erfolgreich am 28.10.2026; [Nachweis](docs/evidence/2026-10-28/airflow-tasks.json) |
 | AWS-Nachweise | [Messwerte, Query-IDs, Logs und CloudWatch-Diagramm](docs/evidence/2026-10-28/aws-verification.json) gesichert |
 
 Die Tests wurden mit `pytest -q` ausgeführt. Die aktuelle Anzahl steht in dessen Ausgabe. Es wird nichts als AWS-Ergebnis ausgegeben, was nicht gemessen wurde.
@@ -160,7 +160,7 @@ Das Upload-Skript schreibt die drei Dateien unter eine neue Paket-ID und zuletzt
 
 Aufräumen: zuerst Snapshot-Kataloge mit `scripts/cleanup_snapshot_catalogs.py` gemäß `docs/operations.md` entfernen, danach `terraform destroy`. Bucket und Athena-Workgroup werden mit allen Inhalten gelöscht (`force_destroy = true`). Das ist für diese Testdaten gewollt und darf **nicht** für Projekte mit echten Daten übernommen werden.
 
-Optional und standardmäßig **aus**: Amazon MWAA (`enable_mwaa=true`). Es wird laufend berechnet, solange es existiert. Anleitung: `docs/operations.md`, Abschnitt 6.
+Optional und standardmäßig **aus**: Amazon MWAA (`enable_mwaa=true`). Für die Demo ist `bankguard-airflow` bereitgestellt; die Airflow-Weboberfläche und ein vollständiger DAG-Lauf sind geprüft. Der manuelle DAG erwartet die drei CSV-Dateien direkt unter `raw/`. MWAA und NAT-Gateway verursachen laufende Kosten. Anleitung: [Betrieb, Abschnitt 6](docs/operations.md#6-optionales-airflow-und-mwaa).
 
 ## Projektstruktur
 
@@ -194,7 +194,7 @@ Automatische Tests; die aktuelle Anzahl zeigt `pytest -q`. `tests/test_problem_s
 
 ## Bekannte Grenzen
 
-Der veröffentlichte Snapshot wird über ein einzelnes S3-Objekt ausgewählt. Dieses einmal auflösen und die ausgewählte Snapshot-Datenbank für alle zusammengehörigen Abfragen verwenden. Alte Snapshots und ihre Katalogdatenbanken bleiben bis zur bewussten Bereinigung bestehen. Die Validierung sammelt die kleinen Demo-Dateien im Arbeitsspeicher; große Datenmengen benötigen verteilte Regeln. Paket-IDs dürfen nicht wiederverwendet werden. Die Deduplizierung ist auf die Glue-Laufhistorie begrenzt; fehlgeschlagene oder abgelaufene Läufe erfordern einen bewussten Neustart. Der zentrale AWS-Ablauf ist verifiziert; Airflow und MWAA bleiben optional und ungeprüft. Die SNS-Metrik bestätigt eine Zustellung; die Sichtbarkeit im persönlichen E-Mail-Postfach ist separat zu bestätigen.
+Der veröffentlichte Snapshot wird über ein einzelnes S3-Objekt ausgewählt. Dieses einmal auflösen und die ausgewählte Snapshot-Datenbank für alle zusammengehörigen Abfragen verwenden. Alte Snapshots und ihre Katalogdatenbanken bleiben bis zur bewussten Bereinigung bestehen. Die Validierung sammelt die kleinen Demo-Dateien im Arbeitsspeicher; große Datenmengen benötigen verteilte Regeln. Paket-IDs dürfen nicht wiederverwendet werden. Die Deduplizierung ist auf die Glue-Laufhistorie begrenzt; fehlgeschlagene oder abgelaufene Läufe erfordern einen bewussten Neustart. Der zentrale AWS-Ablauf und ein manueller Airflow-/MWAA-Lauf sind verifiziert; Langzeitbetrieb und Lastverhalten wurden nicht gemessen. Die SNS-Metrik bestätigt eine Zustellung; die Sichtbarkeit im persönlichen E-Mail-Postfach ist separat zu bestätigen.
 
 Code-Releases liegen unter einer Inhalts-Hash-ID; Skript und Bibliothek werden erst nach vollständigem Upload gemeinsam umgeschaltet. Ein zusätzlicher Prüflauf kontrolliert alle fünf Minuten die Glue-Zustände ERROR und EXPIRED.
 

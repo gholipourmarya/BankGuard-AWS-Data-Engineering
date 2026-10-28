@@ -1,0 +1,95 @@
+{
+  "RestApiStatusCode": 200,
+  "RestApiResponse": {
+    "dag_runs": [
+      {
+        "dag_run_id": "manual__2026-10-28T19:33:59.642161+00:00",
+        "dag_id": "bankguard_pipeline",
+        "logical_date": "2026-10-28T19:33:58Z",
+        "queued_at": "2026-10-28T19:33:59.660224Z",
+        "start_date": "2026-10-28T19:34:00.410198Z",
+        "end_date": "2026-10-28T19:36:58.763283Z",
+        "duration": 178.353085,
+        "data_interval_start": "2026-10-28T19:33:58Z",
+        "data_interval_end": "2026-10-28T19:33:58Z",
+        "run_after": "2026-10-28T19:33:59.642161Z",
+        "last_scheduling_decision": "2026-10-28T19:36:58.758147Z",
+        "run_type": "manual",
+        "state": "success",
+        "triggered_by": "ui",
+        "triggering_user_name": "root",
+        "conf": {},
+        "dag_versions": [
+          {
+            "id": "01a183d1-868b-7752-8006-f6dcb8cdd066",
+            "version_number": 1,
+            "dag_id": "bankguard_pipeline",
+            "bundle_name": "dags-folder",
+            "created_at": "2026-10-28T18:41:49.195459Z",
+            "dag_display_name": "bankguard_pipeline"
+          }
+        ],
+        "dag_display_name": "bankguard_pipeline"
+      },
+      {
+        "dag_run_id": "manual__2026-10-28T19:17:13.017096+00:00",
+        "dag_id": "bankguard_pipeline",
+        "logical_date": "2026-10-28T19:17:11Z",
+        "queued_at": "2026-10-28T19:17:13.031843Z",
+        "start_date": "2026-10-28T19:17:13.305859Z",
+        "end_date": "2026-10-28T19:32:25.589128Z",
+        "duration": 912.283269,
+        "data_interval_start": "2026-10-28T19:17:11Z",
+        "data_interval_end": "2026-10-28T19:17:11Z",
+        "run_after": "2026-10-28T19:17:13.017096Z",
+        "last_scheduling_decision": "2026-10-28T19:32:25.583678Z",
+        "run_type": "manual",
+        "state": "failed",
+        "triggered_by": "ui",
+        "triggering_user_name": "root",
+        "conf": {},
+        "dag_versions": [
+          {
+            "id": "01a183d1-868b-7752-8006-f6dcb8cdd066",
+            "version_number": 1,
+            "dag_id": "bankguard_pipeline",
+            "bundle_name": "dags-folder",
+            "created_at": "2026-10-28T18:41:49.195459Z",
+            "dag_display_name": "bankguard_pipeline"
+          }
+        ],
+        "dag_display_name": "bankguard_pipeline"
+      },
+      {
+        "dag_run_id": "manual__2026-10-28T19:09:07.571698+00:00",
+        "dag_id": "bankguard_pipeline",
+        "logical_date": "2026-10-28T19:09:05Z",
+        "queued_at": "2026-10-28T19:09:07.588971Z",
+        "start_date": "2026-10-28T19:09:08.294166Z",
+        "end_date": "2026-10-28T19:24:20.428142Z",
+        "duration": 912.133976,
+        "data_interval_start": "2026-10-28T19:09:05Z",
+        "data_interval_end": "2026-10-28T19:09:05Z",
+        "run_after": "2026-10-28T19:09:07.571698Z",
+        "last_scheduling_decision": "2026-10-28T19:24:20.422617Z",
+        "run_type": "manual",
+        "state": "failed",
+        "triggered_by": "ui",
+        "triggering_user_name": "root",
+        "conf": {},
+        "dag_versions": [
+          {
+            "id": "01a183d1-868b-7752-8006-f6dcb8cdd066",
+            "version_number": 1,
+            "dag_id": "bankguard_pipeline",
+            "bundle_name": "dags-folder",
+            "created_at": "2026-10-28T18:41:49.195459Z",
+            "dag_display_name": "bankguard_pipeline"
+          }
+        ],
+        "dag_display_name": "bankguard_pipeline"
+      }
+    ],
+    "total_entries": 3
+  }
+}

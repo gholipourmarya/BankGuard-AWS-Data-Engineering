@@ -84,6 +84,38 @@ MWAA ist standardmäßig ausgeschaltet. `enable_mwaa=true` erzeugt auch VPC und 
 
 Der manuelle DAG erwartet drei Dateien direkt unter `raw/`; den automatischen Paket-Upload nicht parallel für denselben Demo-Lauf verwenden. Selbst betriebenes Airflow benötigt für `airflow/requirements.txt` eine separate Python-3.12-Umgebung. Diese optionalen Pakete nicht in die lokale BankGuard-Umgebung mit Python 3.14 installieren. Die Airflow-Variablen heißen `bankguard_bucket`, `bankguard_glue_job`, `bankguard_workgroup` und `bankguard_database`. `aws_default` muss AWS-Zugriff besitzen. Für MWAA gelten dessen eigene Paket-Constraints.
 
+### Im Browser öffnen und den DAG starten
+
+Die Umgebung heißt `bankguard-airflow` in `eu-central-1`. In der AWS-MWAA-Konsole die Umgebung auswählen und **Open Airflow UI** öffnen. `localhost:8080` funktioniert nur mit einem separat gestarteten lokalen Airflow-Webserver.
+
+Für diesen manuellen DAG die Dateien direkt unter `raw/` hochladen. Der automatische Paket-Uploader unter `raw/batches/` bedient einen anderen Eingabepfad:
+
+```bash
+BUCKET=$(terraform -chdir=terraform output -raw bucket_name)
+aws s3 cp data/customers.csv "s3://$BUCKET/raw/customers.csv"
+aws s3 cp data/accounts.csv "s3://$BUCKET/raw/accounts.csv"
+aws s3 cp data/transactions.csv "s3://$BUCKET/raw/transactions.csv"
+```
+
+Während eines DAG-Laufs die Dateien nicht verändern. Danach in Airflow `bankguard_pipeline` aktivieren und **Trigger DAG** wählen. Alle vier Schritte müssen erfolgreich enden: `check_inputs → start_glue_job → verify_outputs → run_athena_query`.
+
+Wiederholtes `Poking for key .../raw/customers.csv` bedeutet, dass der Sensor auf die Datei wartet. Die drei CSV-Dateien an den oben genannten Pfad hochladen; ist der Sensor bereits nach 15 Minuten fehlgeschlagen, nach Prüfung aktiver Glue-Läufe den fehlgeschlagenen Task mit **Clear** erneut ausführen oder einen neuen DAG-Lauf starten. Eine `DeprecatedImportWarning` allein ist kein fehlgeschlagener Task.
+
+### Nachgewiesener MWAA-Lauf am 28.10.2026
+
+Die Umgebung ist `AVAILABLE` und verwendet Airflow **3.3.1** mit Klasse **mw1.micro**. Die Airflow-API bestätigt für `manual__2026-10-28T19:33:59.642161+00:00` den Gesamtstatus **success**. Start: **20:34:00**, Ende: **20:36:58**, jeweils Europe/Berlin (UTC+1); Gesamtdauer **178,353 Sekunden**, einschließlich Scheduling zwischen den Tasks.
+
+| Task | Operator | Status | Dauer laut Airflow-API |
+| --- | --- | --- | --- |
+| `check_inputs` | S3KeySensor | success | 1,242 s |
+| `start_glue_job` | GlueJobOperator | success | 140,777 s |
+| `verify_outputs` | PythonOperator | success | 0,892 s |
+| `run_athena_query` | AthenaOperator | success | 31,240 s |
+
+Die Task-Dauer des Glue-Operators umfasst den Aufruf und das Warten auf Glue; sie ist nicht mit der reinen Glue-Ausführungszeit gleichzusetzen. Die früher dokumentierten 135 Sekunden gehören zu einem separaten direkten AWS-Lauf.
+
+Nachweise: [MWAA-Umgebung](evidence/2026-10-28/airflow-environment.json), [DAG-Läufe](evidence/2026-10-28/airflow-runs.json) und [Task-Ergebnisse](evidence/2026-10-28/airflow-tasks.json). Vorherige Sensor-Läufe scheiterten am fehlenden direkten Eingabepfad; nach dem Upload endete der neue Lauf erfolgreich. Für die Präsentation zusätzlich einen Screenshot der vier grünen Tasks sichern.
+
 Nach der Demo MWAA wieder mit `enable_mwaa=false` entfernen oder das gesamte Projekt abbauen.
 
 ## 7. Aufräumen
@@ -118,7 +150,7 @@ python scripts/verify_aws.py "$BUCKET" --out build/aws-verification.json
 
 Das Skript startet keine Glue-Jobs, führt aber kostenpflichtige Athena-Abfragen aus. Es löst den Snapshot einmal auf, prüft den erfolgreichen Glue-Zustand und die Anzahlen, führt die SQL-Berichte aus und vergleicht CSV und Parquet für einen tatsächlich vorhandenen Tag. Query-IDs, SQL, Ergebnisse und Laufzeiten landen in der JSON-Datei.
 
-Airflow/MWAA bleibt optional und wurde nicht bereitgestellt. Die Demo-Ressourcen bleiben für die Präsentation bestehen und verursachen weiter Kosten. Eine Löschung wurde nicht ausgeführt; die Anleitung in Abschnitt 7 ist vorbereitet.
+Airflow/MWAA ist optional und wurde inzwischen für die Demo bereitgestellt. `bankguard-airflow` ist `AVAILABLE`; ein vollständiger manueller DAG-Lauf und alle vier Tasks sind per API als erfolgreich bestätigt (siehe Abschnitt 6). Die Demo-Ressourcen bleiben für die Präsentation bestehen und verursachen weiter Kosten. Eine Löschung wurde nicht ausgeführt; die Anleitung in Abschnitt 7 ist vorbereitet.
 
 
 GitHub-Nachweise: [CI](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40662802001) und [Deployment, erfolgreicher Versuch 2](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40739499524). Beide liefen auf dem vorhandenen Remote-Commit `091d4363f37d1007d8559e7544a9e02ff760d81c` von `feature/bankguard`. Der ältere `main`-Workflow scheiterte bereits vor der AWS-Anmeldung, weil dort pytest fehlt. Der Projektbranch enthält diese Korrektur. Es wurde kein Merge nach `main` durchgeführt.

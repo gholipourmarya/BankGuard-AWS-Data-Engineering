@@ -200,7 +200,7 @@ This helps each source system identify which data needs correction.
 | Terraform, AWS Glue job, Athena tables, SQL | **Executed and verified on AWS on October 28, 2026** |
 | CloudWatch, SNS, KMS and file-triggered execution | Verified on AWS; EventBridge/SNS reported delivery for an intentional failure |
 | GitHub Actions | [CI passed](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40662802001); [OIDC deployment passed](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40739499524) on `feature/bankguard` |
-| Airflow / MWAA | Optional; no real Airflow/MWAA execution yet |
+| Airflow / MWAA | **Executed on AWS:** `bankguard_pipeline` and all four tasks succeeded on October 28, 2026; [evidence](docs/evidence/2026-10-28/airflow-tasks.json) |
 | AWS evidence | [Query results, IDs and timings](docs/evidence/2026-10-28/aws-verification.json), logs and an exported CloudWatch chart saved |
 
 Tests were executed using:
@@ -445,7 +445,7 @@ Enable it with:
 enable_mwaa = true
 ```
 
-MWAA generates ongoing costs while the environment exists.
+The demo environment `bankguard-airflow` is deployed and its web UI and one complete DAG run are verified. The manual DAG expects all three CSV files directly under `raw/`. MWAA and the NAT gateway generate ongoing costs while they exist.
 
 Instructions are available in:
 
@@ -619,7 +619,7 @@ Failed or expired executions require an intentional restart.
 
 ### AWS Verification
 
-The central AWS pipeline is verified. Optional Airflow/MWAA remains unverified. SNS reports notification delivery; personal inbox receipt needs separate confirmation.
+The central AWS pipeline and one manual Airflow/MWAA run are verified. Long-term operation and load behavior remain unmeasured. SNS reports notification delivery; personal inbox receipt needs separate confirmation.
 
 ### Code Releases
 

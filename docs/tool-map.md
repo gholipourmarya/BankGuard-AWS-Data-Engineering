@@ -11,7 +11,7 @@
 | Athena | SQL-Berichte und Scanvergleich | SQL-Berichte und gleicher CSV-/Parquet-Datenbestand geprüft; Scanmessung gesichert |
 | GitHub Actions | CI und manueller Glue-Code-Upload über OIDC | CI und OIDC-Deployment auf feature/bankguard erfolgreich; Links und Commit-Stand siehe Betrieb |
 | Docker | Lokale Tests und Verarbeitung im Container | Image gebaut und ausgeführt: 113 Tests und vollständige Verarbeitung erfolgreich |
-| Airflow und optional MWAA | Manueller Lauf und Prüfung seiner Erfolgsquittung | Funktionen lokal simuliert; Airflow- und MWAA-Lauf offen |
+| Airflow und optional MWAA | Manueller Lauf und Prüfung seiner Erfolgsquittung | MWAA `AVAILABLE`; DAG und vier Tasks am 28.10.2026 erfolgreich, Airflow 3.3.1 / mw1.micro; [API-Nachweis](evidence/2026-10-28/airflow-tasks.json) |
 
 Für Befehle und Voraussetzungen siehe [Betrieb](operations.md). Ein erfolgreicher Test mit simuliertem AWS-Client beweist keine IAM-, Netzwerk- oder Cloud-Laufzeitfunktion.
 
