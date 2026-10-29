@@ -78,14 +78,18 @@ def test_athena_timeout_cancels_query(monkeypatch):
 
 
 def prepare_snapshot_verification(monkeypatch, accepted, rejected, day):
-    receipt = {"database": "snapshot_db", "run_id": "jr_test", "counts_consistent": True,
+    receipt = {"database": "template_jr_test", "run_id": "jr_test", "counts_consistent": True,
+               "input_prefix": "raw", "data_prefix": "snapshots/jr_test/",
                "input_count": accepted + rejected, "accepted_count": accepted,
                "rejected_count": rejected, "by_source_system": {"CARDS": {
                    "input_count": accepted + rejected, "accepted_count": accepted,
                    "rejected_count": rejected, "counts_consistent": True}}}
     monkeypatch.setattr(verify_aws, "read_published_snapshot", lambda *_: receipt)
     glue = Mock()
-    glue.get_job_run.return_value = {"JobRun": {"JobRunState": "SUCCEEDED"}}
+    glue.get_job_run.return_value = {"JobRun": {"Id": "jr_test", "JobName": "job",
+                                              "JobRunState": "SUCCEEDED", "Arguments": {}}}
+    glue.get_job.return_value = {"Job": {"DefaultArguments": {
+        "--bucket": "bucket", "--database": "template", "--input_prefix": "raw"}}}
     monkeypatch.setattr(verify_aws, "build_queries", lambda _: {"CSV": "FORMAT_CSV", "Parquet": "FORMAT_PARQUET"})
 
     def query(athena, sql, workgroup, database):
@@ -132,7 +136,7 @@ def test_verification_cli_saves_zero_accepted_snapshot_successfully(monkeypatch,
     glue = prepare_snapshot_verification(monkeypatch, 0, 1, None)
     monkeypatch.setattr(boto3, "client", lambda service: glue if service == "glue" else Mock())
     target = tmp_path / "evidence.json"
-    monkeypatch.setattr(sys, "argv", ["verify_aws.py", "bucket", "--out", str(target)])
+    monkeypatch.setattr(sys, "argv", ["verify_aws.py", "bucket", "--job", "job", "--out", str(target)])
     assert verify_aws.main() == 0
     report = json.loads(target.read_text())
     assert report["counts_verified"] is True
@@ -170,3 +174,83 @@ def test_verification_normalizes_rejected_source_labels_like_pipeline_metrics(mo
 
     monkeypatch.setattr(verify_aws, "run", run)
     assert verify_aws.verify(Mock(), glue, Mock(), "bucket", "job", "group")["counts_verified"] is True
+
+
+@pytest.mark.parametrize("sql,expected", [
+    ("-- Verified on Athena; see evidence.\nSELECT 1;", ["SELECT 1"]),
+    ("SELECT 1; -- trailing comment;\n", ["SELECT 1"]),
+    ("SELECT 1 -- inline; comment\n; SELECT 2;", ["SELECT 1", "SELECT 2"]),
+    ("SELECT 'a;b--c'; SELECT 'it''s;fine';", ["SELECT 'a;b--c'", "SELECT 'it''s;fine'"]),
+    ('SELECT "a;b" FROM "table";', ['SELECT "a;b" FROM "table"']),
+    ("SELECT /* comment; /* nested; */ end */ 1;", ["SELECT   1"]),
+    ("-- only a comment;\n/* another; */", []),
+])
+def test_sql_report_splitter_preserves_quoted_semicolons_and_ignores_comments(sql, expected):
+    assert verify_aws.sql_statements(sql) == expected
+
+
+@pytest.mark.parametrize("sql", ["SELECT 'unterminated", "SELECT /* unterminated"])
+def test_sql_report_splitter_rejects_unterminated_quotes_and_comments(sql):
+    with pytest.raises(ValueError, match="Unterminated SQL"):
+        verify_aws.sql_statements(sql)
+
+
+def test_explicit_empty_run_id_does_not_fall_back_to_current_snapshot():
+    s3 = Mock()
+    with pytest.raises(ValueError, match="Glue run ID"):
+        verify_aws.verify(s3, Mock(), Mock(), "bucket", "job", "group", run_id="")
+    s3.get_object.assert_not_called()
+
+
+@pytest.mark.parametrize("field,value", [
+    ("database", "template_jr_other"),
+    ("database", "another_template_jr_test"),
+    ("input_prefix", "raw/batches/claimed"),
+    ("data_prefix", "snapshots/jr_other/"),
+    ("data_prefix", None),
+])
+def test_verification_rejects_wrong_snapshot_identity_before_athena(monkeypatch, field, value):
+    glue = prepare_snapshot_verification(monkeypatch, 0, 0, None)
+    receipt = verify_aws.read_published_snapshot(None, None)
+    receipt[field] = value
+    query = Mock()
+    monkeypatch.setattr(verify_aws, "run", query)
+    # Even --expected-prefix cannot make a forged receipt outrank Glue's input.
+    with pytest.raises(ValueError):
+        verify_aws.verify(Mock(), glue, Mock(), "bucket", "job", "group",
+                          expected_prefix=receipt["input_prefix"])
+    query.assert_not_called()
+
+
+@pytest.mark.parametrize("field,value", [("Id", "jr_other"), ("JobName", "other-job"),
+                                         ("JobRunState", "FAILED")])
+def test_verification_rejects_wrong_execution_identity(monkeypatch, field, value):
+    glue = prepare_snapshot_verification(monkeypatch, 0, 0, None)
+    glue.get_job_run.return_value["JobRun"][field] = value
+    query = Mock()
+    monkeypatch.setattr(verify_aws, "run", query)
+    with pytest.raises(ValueError):
+        verify_aws.verify(Mock(), glue, Mock(), "bucket", "job", "group")
+    query.assert_not_called()
+
+
+def test_verification_resolves_run_arguments_and_fixed_arguments_in_glue_order(monkeypatch):
+    glue = prepare_snapshot_verification(monkeypatch, 0, 0, None)
+    receipt = verify_aws.read_published_snapshot(None, None)
+    receipt.update(input_prefix="raw/batches/run", database="fixed_jr_test")
+    glue.get_job_run.return_value["JobRun"]["Arguments"] = {
+        "--input_prefix": "raw/batches/run/", "--database": "ignored"}
+    glue.get_job.return_value["Job"]["NonOverridableArguments"] = {"--database": "fixed"}
+    assert verify_aws.verify(Mock(), glue, Mock(), "bucket", "job", "group")["counts_verified"]
+
+
+@pytest.mark.parametrize("key,value", [("--bucket", "other-bucket"), ("--database", "other"),
+                                      ("--input_prefix", "raw/batches/actual"), ("--bucket", None)])
+def test_verification_rejects_mismatched_or_missing_glue_arguments(monkeypatch, key, value):
+    glue = prepare_snapshot_verification(monkeypatch, 0, 0, None)
+    glue.get_job_run.return_value["JobRun"]["Arguments"] = {key: value}
+    query = Mock()
+    monkeypatch.setattr(verify_aws, "run", query)
+    with pytest.raises(ValueError):
+        verify_aws.verify(Mock(), glue, Mock(), "bucket", "job", "group")
+    query.assert_not_called()

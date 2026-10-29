@@ -109,9 +109,9 @@ resource "aws_cloudwatch_dashboard" "bankguard" {
         width  = 12
         height = 6
         properties = {
-          title  = "Records per run"
+          title  = "Records per hour"
           region = var.region
-          stat   = "Maximum"
+          stat   = "Sum"
           period = 3600
           metrics = [
             ["BankGuard", "InputCount"],

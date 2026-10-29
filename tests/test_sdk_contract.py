@@ -1,5 +1,6 @@
 """Validate AWS request shapes with the installed SDK, without network calls."""
 import copy
+import json
 from unittest.mock import Mock
 
 import pytest
@@ -24,6 +25,11 @@ def test_lambda_requests_match_actual_sdk_models(monkeypatch):
     with Stubber(s3) as storage, Stubber(glue) as jobs:
         for name in start_glue_job.FILES:
             storage.add_response("head_object", {}, {"Bucket": "bucket", "Key": f"{prefix}/{name}"})
+        storage.add_response("put_object", {}, {
+            "Bucket": "bucket", "Key": "submissions/test1.json", "IfNoneMatch": "*",
+            "ContentType": "application/json",
+            "Body": json.dumps({"input_prefix": prefix, "job": "job"}).encode("utf-8"),
+        })
         jobs.add_response("get_job_runs", {"JobRuns": []}, {"JobName": "job"})
         jobs.add_response("start_job_run", {"JobRunId": "jr_test"}, {
             "JobName": "job", "Arguments": {"--input_prefix": prefix}, "JobRunQueuingEnabled": True})

@@ -51,8 +51,14 @@ data "aws_iam_policy_document" "trigger" {
   }
 
   statement {
+    sid       = "ClaimDataPackages"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.lake.arn}/submissions/*"]
+  }
+
+  statement {
     sid       = "ReadEncryptedObjectMetadata"
-    actions   = ["kms:Decrypt"]
+    actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
     resources = [aws_kms_key.lake.arn]
   }
 }

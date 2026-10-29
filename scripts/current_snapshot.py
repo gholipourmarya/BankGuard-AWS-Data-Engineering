@@ -2,6 +2,7 @@
 import argparse
 import json
 from pathlib import Path
+import re
 import sys
 
 # Support both `python scripts/current_snapshot.py` and package imports.
@@ -11,8 +12,8 @@ if not __package__:
 from src.validate import validate_metrics
 
 
-def read_published_snapshot(s3, bucket):
-    with s3.get_object(Bucket=bucket, Key="published/current.json")["Body"] as body:
+def _read_receipt(s3, bucket, key):
+    with s3.get_object(Bucket=bucket, Key=key)["Body"] as body:
         receipt = json.load(body)
     if (not isinstance(receipt, dict)
             or any(not isinstance(receipt.get(field), str) or not receipt[field].strip()
@@ -20,6 +21,20 @@ def read_published_snapshot(s3, bucket):
             or receipt.get("counts_consistent") is not True):
         raise ValueError("Invalid published snapshot receipt")
     validate_metrics(receipt)
+    return receipt
+
+
+def read_published_snapshot(s3, bucket):
+    return _read_receipt(s3, bucket, "published/current.json")
+
+
+def read_run_snapshot(s3, bucket, run_id):
+    """Read a fixed run's receipt even after a newer snapshot is published."""
+    if not isinstance(run_id, str) or not re.fullmatch(r"jr_[a-zA-Z0-9_]+", run_id):
+        raise ValueError("Expected an AWS Glue run ID")
+    receipt = _read_receipt(s3, bucket, f"runs/{run_id}/metrics.json")
+    if receipt["run_id"] != run_id:
+        raise ValueError("Snapshot receipt does not identify the requested run")
     return receipt
 
 

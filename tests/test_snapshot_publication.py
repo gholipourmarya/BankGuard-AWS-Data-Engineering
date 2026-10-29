@@ -6,7 +6,7 @@ from unittest.mock import Mock
 import pytest
 
 from src import snapshot, validate
-from scripts.current_snapshot import read_published_snapshot
+from scripts.current_snapshot import read_published_snapshot, read_run_snapshot
 
 METRICS = {"input_count": 1, "accepted_count": 1, "rejected_count": 0, "counts_consistent": True,
            "by_source_system": {"CARDS": {"input_count": 1, "accepted_count": 1,
@@ -216,3 +216,25 @@ def test_empty_pipeline_metrics_have_a_valid_empty_source_breakdown():
     metrics = run_pipeline([], [], [], "jr_empty", "now")["metrics"]
     assert metrics["by_source_system"] == {}
     validate.validate_metrics(metrics)
+
+
+def test_fixed_run_receipt_remains_readable_after_publication_moves():
+    storage = Storage()
+    expected = {"database": "template_jr_test", "run_id": "jr_test", **copy.deepcopy(METRICS)}
+    storage.objects["runs/jr_test/metrics.json"] = json.dumps(expected).encode()
+    assert read_run_snapshot(storage, "bucket", "jr_test") == expected
+
+
+def test_fixed_run_receipt_rejects_a_different_run_id():
+    storage = Storage()
+    receipt = {"database": "template_jr_other", "run_id": "jr_other", **copy.deepcopy(METRICS)}
+    storage.objects["runs/jr_test/metrics.json"] = json.dumps(receipt).encode()
+    with pytest.raises(ValueError, match="requested run"):
+        read_run_snapshot(storage, "bucket", "jr_test")
+
+
+def test_fixed_run_receipt_rejects_invalid_key_paths_before_s3_access():
+    storage = Mock()
+    with pytest.raises(ValueError, match="Glue run ID"):
+        read_run_snapshot(storage, "bucket", "../published/current")
+    storage.get_object.assert_not_called()
