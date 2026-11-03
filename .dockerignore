@@ -1,0 +1,16 @@
+.git
+.venv
+__pycache__
+.pytest_cache
+data/*.csv
+data/*.json
+output/
+build/
+terraform/.terraform
+terraform/*.tfstate*
+terraform/*.tfvars*
+terraform/*.tfplan
+.aws
+.env
+.env.*
+output_example/

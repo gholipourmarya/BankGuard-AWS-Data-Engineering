@@ -1,0 +1,14 @@
+{
+  "currency": "USD",
+  "date": "2026-10-28",
+  "region": "eu-central-1",
+  "basis": "Public on-demand list prices; excludes tax, discounts and other services",
+  "glue_success_dpu_seconds": 270.0,
+  "glue_failure_dpu_seconds": 104.0,
+  "glue_success_usd": "0.03300",
+  "glue_failure_usd": "0.01466666666666666666666666667",
+  "glue_30_successes_usd": "0.99000",
+  "athena_queries": 10,
+  "athena_billed_bytes": 104857600,
+  "athena_queries_usd": "0.000476837158203125"
+}

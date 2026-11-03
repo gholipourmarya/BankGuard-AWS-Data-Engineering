@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-28",
+  "region": "eu-central-1",
+  "branch": "feature/bankguard",
+  "base_commit": "091d4363f37d1007d8559e7544a9e02ff760d81c",
+  "working_tree_has_changes": true,
+  "tested_etl_release": "66b30c771db345deb4ab9202d86f0fe6ded64f810279d303d4931b388fe9fa14",
+  "local_tests": 113,
+  "container_tests": 113,
+  "terraform_version": "1.17.0",
+  "aws_provider_version": "5.100.0",
+  "automatic_batch": "raw/batches/172f45007c524d918708385d5ef7d086",
+  "optional_mwaa_deployed": false
+}

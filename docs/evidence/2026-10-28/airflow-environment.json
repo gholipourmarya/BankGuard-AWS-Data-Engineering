@@ -1,0 +1,7 @@
+{
+  "Name": "bankguard-airflow",
+  "Status": "AVAILABLE",
+  "AirflowVersion": "3.3.1",
+  "EnvironmentClass": "mw1.micro",
+  "WebserverUrl": "c68f2547-36d4-437f-b296-bda8954ed805.c9.airflow.eu-central-1.on.aws"
+}

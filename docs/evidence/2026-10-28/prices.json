@@ -1,0 +1,203 @@
+{
+  "glue": [
+    {
+      "product": {
+        "productFamily": "AWS Glue",
+        "attributes": {
+          "regionCode": "eu-central-1",
+          "servicecode": "AWSGlue",
+          "usagetype": "EUC1-ETL-DPU-Hour",
+          "locationType": "AWS Region",
+          "location": "EU (Frankfurt)",
+          "servicename": "AWS Glue",
+          "operation": "Jobrun",
+          "group": "ETL Job run"
+        },
+        "sku": "SGNZ4NSSE4T2BQ8Z"
+      },
+      "serviceCode": "AWSGlue",
+      "terms": {
+        "OnDemand": {
+          "SGNZ4NSSE4T2BQ8Z.JRTCKXETXF": {
+            "priceDimensions": {
+              "SGNZ4NSSE4T2BQ8Z.JRTCKXETXF.6YS6EN2CT7": {
+                "unit": "DPU-Hour",
+                "endRange": "Inf",
+                "description": "$0.44 per Data Processing Unit-Hour for AWS Glue ETL job",
+                "appliesTo": [],
+                "rateCode": "SGNZ4NSSE4T2BQ8Z.JRTCKXETXF.6YS6EN2CT7",
+                "beginRange": "0",
+                "pricePerUnit": {
+                  "USD": "0.4400000000"
+                }
+              }
+            },
+            "sku": "SGNZ4NSSE4T2BQ8Z",
+            "effectiveDate": "2026-10-01T00:00:00Z",
+            "offerTermCode": "JRTCKXETXF",
+            "termAttributes": {}
+          }
+        }
+      },
+      "version": "20261012185542",
+      "publicationDate": "2026-10-12T18:55:42Z"
+    }
+  ],
+  "athena": [
+    {
+      "product": {
+        "productFamily": "Athena Queries",
+        "attributes": {
+          "regionCode": "eu-central-1",
+          "servicecode": "AmazonAthena",
+          "freeQueryTypes": "Data definition queries (DDL), Failed Queries and statements used to create or load partitions",
+          "usagetype": "EUC1-DataScannedInTB",
+          "description": "Charged for total data scanned per query with a minimum 10MB for each successful or cancelled queries",
+          "locationType": "AWS Region",
+          "location": "EU (Frankfurt)",
+          "servicename": "Amazon Athena",
+          "operation": ""
+        },
+        "sku": "VFMVTH8MZDQM2MKA"
+      },
+      "serviceCode": "AmazonAthena",
+      "terms": {
+        "OnDemand": {
+          "VFMVTH8MZDQM2MKA.JRTCKXETXF": {
+            "priceDimensions": {
+              "VFMVTH8MZDQM2MKA.JRTCKXETXF.6YS6EN2CT7": {
+                "unit": "Terabytes",
+                "endRange": "Inf",
+                "description": "5.00 USD per Terabytes for DataScannedInTB in EU (Frankfurt)",
+                "appliesTo": [],
+                "rateCode": "VFMVTH8MZDQM2MKA.JRTCKXETXF.6YS6EN2CT7",
+                "beginRange": "0",
+                "pricePerUnit": {
+                  "USD": "5.0000000000"
+                }
+              }
+            },
+            "sku": "VFMVTH8MZDQM2MKA",
+            "effectiveDate": "2026-03-01T00:00:00Z",
+            "offerTermCode": "JRTCKXETXF",
+            "termAttributes": {}
+          }
+        }
+      },
+      "version": "20260911124408",
+      "publicationDate": "2026-09-11T12:44:08Z"
+    }
+  ],
+  "kms": [
+    {
+      "product": {
+        "productFamily": "Encryption Key",
+        "attributes": {
+          "regionCode": "eu-central-1",
+          "servicecode": "awskms",
+          "usagetype": "eu-central-1-KMS-Keys",
+          "locationType": "AWS Region",
+          "location": "EU (Frankfurt)",
+          "servicename": "AWS Key Management Service",
+          "operation": ""
+        },
+        "sku": "PK7D6SUW8TP3XWZU"
+      },
+      "serviceCode": "awskms",
+      "terms": {
+        "OnDemand": {
+          "PK7D6SUW8TP3XWZU.JRTCKXETXF": {
+            "priceDimensions": {
+              "PK7D6SUW8TP3XWZU.JRTCKXETXF.6YS6EN2CT7": {
+                "unit": "Keys",
+                "endRange": "Inf",
+                "description": "$1 per customer managed KMS key version in EU (Frankfurt)",
+                "appliesTo": [],
+                "rateCode": "PK7D6SUW8TP3XWZU.JRTCKXETXF.6YS6EN2CT7",
+                "beginRange": "0",
+                "pricePerUnit": {
+                  "USD": "1.0000000000"
+                }
+              }
+            },
+            "sku": "PK7D6SUW8TP3XWZU",
+            "effectiveDate": "2026-10-01T00:00:00Z",
+            "offerTermCode": "JRTCKXETXF",
+            "termAttributes": {}
+          }
+        }
+      },
+      "version": "20261026201814",
+      "publicationDate": "2026-10-26T20:18:14Z"
+    }
+  ],
+  "s3": [
+    {
+      "product": {
+        "productFamily": "Storage",
+        "attributes": {
+          "volumeType": "Standard",
+          "storageClass": "General Purpose",
+          "regionCode": "eu-central-1",
+          "servicecode": "AmazonS3",
+          "durability": "99.999999999%",
+          "usagetype": "EUC1-TimedStorage-ByteHrs",
+          "locationType": "AWS Region",
+          "location": "EU (Frankfurt)",
+          "servicename": "Amazon Simple Storage Service",
+          "availability": "99.99%",
+          "operation": ""
+        },
+        "sku": "NRYRNCXF5TWHB476"
+      },
+      "serviceCode": "AmazonS3",
+      "terms": {
+        "OnDemand": {
+          "NRYRNCXF5TWHB476.JRTCKXETXF": {
+            "priceDimensions": {
+              "NRYRNCXF5TWHB476.JRTCKXETXF.PXJDJ3YRG3": {
+                "unit": "GB-Mo",
+                "endRange": "Inf",
+                "description": "$0.0225 per GB - storage used / month over 500 TB",
+                "appliesTo": [],
+                "rateCode": "NRYRNCXF5TWHB476.JRTCKXETXF.PXJDJ3YRG3",
+                "beginRange": "512000",
+                "pricePerUnit": {
+                  "USD": "0.0225000000"
+                }
+              },
+              "NRYRNCXF5TWHB476.JRTCKXETXF.D42MF2PVJS": {
+                "unit": "GB-Mo",
+                "endRange": "512000",
+                "description": "$0.0235 per GB - next 450 TB / month of storage used",
+                "appliesTo": [],
+                "rateCode": "NRYRNCXF5TWHB476.JRTCKXETXF.D42MF2PVJS",
+                "beginRange": "51200",
+                "pricePerUnit": {
+                  "USD": "0.0235000000"
+                }
+              },
+              "NRYRNCXF5TWHB476.JRTCKXETXF.PGHJ3S3EYE": {
+                "unit": "GB-Mo",
+                "endRange": "51200",
+                "description": "$0.0245 per GB - first 50 TB / month of storage used",
+                "appliesTo": [],
+                "rateCode": "NRYRNCXF5TWHB476.JRTCKXETXF.PGHJ3S3EYE",
+                "beginRange": "0",
+                "pricePerUnit": {
+                  "USD": "0.0245000000"
+                }
+              }
+            },
+            "sku": "NRYRNCXF5TWHB476",
+            "effectiveDate": "2026-10-01T00:00:00Z",
+            "offerTermCode": "JRTCKXETXF",
+            "termAttributes": {}
+          }
+        }
+      },
+      "version": "20261015173540",
+      "publicationDate": "2026-10-15T17:35:40Z"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+    "JobRun": {
+        "Id": "jr_f3bd319fb8a0cbd758b3f174b3b7af817209cad2d46969bf9b311802e01fb91b",
+        "Attempt": 0,
+        "JobName": "bankguard-etl",
+        "JobMode": "SCRIPT",
+        "JobRunQueuingEnabled": true,
+        "StartedOn": "2026-10-28T18:46:20.269000+01:00",
+        "LastModifiedOn": "2026-10-28T18:47:19.500000+01:00",
+        "CompletedOn": "2026-10-28T18:47:19.500000+01:00",
+        "JobRunState": "FAILED",
+        "Arguments": {
+            "--input_prefix": "raw/batches/verification-missing-20261028T1745"
+        },
+        "ErrorMessage": "NoSuchKey: An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.",
+        "PredecessorRuns": [],
+        "AllocatedCapacity": 2,
+        "ExecutionTime": 52,
+        "Timeout": 30,
+        "MaxCapacity": 2.0,
+        "WorkerType": "G.1X",
+        "NumberOfWorkers": 2,
+        "LogGroupName": "/aws-glue/jobs",
+        "GlueVersion": "4.0",
+        "DPUSeconds": 104.0
+    }
+}

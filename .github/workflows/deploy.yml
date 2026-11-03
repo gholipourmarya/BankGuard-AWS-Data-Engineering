@@ -1,8 +1,8 @@
 name: Deploy ETL code
 
 # Terraform owns the infrastructure (run `terraform apply` manually).
-# This workflow only ships the ETL code: it uploads banking_etl.py and the
-# validation library to S3 and can start the Glue job.
+# Uploads an immutable script/library pair, then switches both URIs in one
+# Glue UpdateJob call. Old releases remain available to already submitted jobs.
 # Authentication uses OpenID Connect: no AWS access keys are stored in GitHub.
 
 on:
@@ -16,6 +16,10 @@ on:
 permissions:
   id-token: write # required to request the OIDC token
   contents: read
+
+concurrency:
+  group: bankguard-code-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -32,23 +36,21 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install -r requirements.txt
-      - run: pytest -q
-
-      - name: Build library zip
-        run: |
-          mkdir -p build
-          (cd src && zip -j ../build/src.zip validate.py transform.py)
+      - name: Install test dependencies
+        run: python -m pip install "pytest>=8.0" -r requirements.txt
+      - name: Run tests
+        run: python -m pytest -q
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Upload code to S3
-        run: |
-          aws s3 cp glue/banking_etl.py "s3://${{ vars.BANKGUARD_BUCKET }}/scripts/banking_etl.py"
-          aws s3 cp build/src.zip "s3://${{ vars.BANKGUARD_BUCKET }}/scripts/src.zip"
+      - name: Publish immutable ETL release
+        env:
+          BANKGUARD_BUCKET: ${{ vars.BANKGUARD_BUCKET }}
+          GLUE_JOB_NAME: ${{ vars.GLUE_JOB_NAME }}
+        run: python scripts/deploy_release.py "$BANKGUARD_BUCKET" "$GLUE_JOB_NAME"
 
       - name: Start Glue job
         if: ${{ inputs.run_job }}

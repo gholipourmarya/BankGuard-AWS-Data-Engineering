@@ -1,0 +1,5 @@
+# Local development and tests. The Glue job runs on AWS Glue 4.0 (Spark) and
+# brings its own dependencies.
+pytest>=8.0
+# CRT is required for credentials created by `aws login`.
+boto3[crt]>=1.41,<2
