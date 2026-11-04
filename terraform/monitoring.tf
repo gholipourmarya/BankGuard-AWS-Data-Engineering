@@ -88,6 +88,23 @@ resource "aws_cloudwatch_metric_alarm" "pass_rate_low" {
   alarm_description   = "Data-quality pass rate below ${var.pass_rate_alarm_threshold} percent"
   namespace           = "BankGuard"
   metric_name         = "PassRatePercent"
+  dimensions          = { JobName = aws_glue_job.etl.name, Dataset = "overall" }
+  statistic           = "Minimum"
+  period              = 3600
+  evaluation_periods  = 1
+  threshold           = var.pass_rate_alarm_threshold
+  comparison_operator = "LessThanThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "dataset_pass_rate_low" {
+  for_each            = toset(["customers", "accounts", "transactions"])
+  alarm_name          = "${var.project_name}-${each.key}-pass-rate-low"
+  alarm_description   = "${each.key} pass rate below ${var.pass_rate_alarm_threshold} percent"
+  namespace           = "BankGuard"
+  metric_name         = "PassRatePercent"
+  dimensions          = { JobName = aws_glue_job.etl.name, Dataset = each.key }
   statistic           = "Minimum"
   period              = 3600
   evaluation_periods  = 1
@@ -114,9 +131,9 @@ resource "aws_cloudwatch_dashboard" "bankguard" {
           stat   = "Sum"
           period = 3600
           metrics = [
-            ["BankGuard", "InputCount"],
-            ["BankGuard", "AcceptedCount"],
-            ["BankGuard", "RejectedCount"],
+            ["BankGuard", "InputCount", "JobName", aws_glue_job.etl.name, "Dataset", "overall"],
+            ["BankGuard", "AcceptedCount", "JobName", aws_glue_job.etl.name, "Dataset", "overall"],
+            ["BankGuard", "RejectedCount", "JobName", aws_glue_job.etl.name, "Dataset", "overall"],
           ]
         }
       },
@@ -132,7 +149,10 @@ resource "aws_cloudwatch_dashboard" "bankguard" {
           stat   = "Minimum"
           period = 3600
           metrics = [
-            ["BankGuard", "PassRatePercent"],
+            ["BankGuard", "PassRatePercent", "JobName", aws_glue_job.etl.name, "Dataset", "overall"],
+            ["BankGuard", "PassRatePercent", "JobName", aws_glue_job.etl.name, "Dataset", "customers"],
+            ["BankGuard", "PassRatePercent", "JobName", aws_glue_job.etl.name, "Dataset", "accounts"],
+            ["BankGuard", "PassRatePercent", "JobName", aws_glue_job.etl.name, "Dataset", "transactions"],
           ]
         }
       },

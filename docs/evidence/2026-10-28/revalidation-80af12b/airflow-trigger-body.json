@@ -1,0 +1,9 @@
+{
+  "dag_run_id": "manual__revalidation_80af12b_zero_20261028T204213Z",
+  "logical_date": "2026-10-28T20:42:13.195857+00:00",
+  "conf": {
+    "integration_test": "zero-accepted-unicode-control",
+    "commit": "80af12bdfcd373b46651ac51bc7996a659913524"
+  },
+  "note": "Verify current release: Unicode control ID rejected; zero accepted records remain a valid result"
+}

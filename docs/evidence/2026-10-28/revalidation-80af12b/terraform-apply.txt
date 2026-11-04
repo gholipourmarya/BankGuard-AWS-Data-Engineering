@@ -1,0 +1,18 @@
+[0m[1maws_s3_object.dag_validation[0]: Creating...[0m[0m
+[0m[1maws_s3_object.dag[0]: Modifying... [id=dags/bankguard_pipeline.py][0m[0m
+[0m[1maws_s3_object.dag[0]: Modifications complete after 1s [id=dags/bankguard_pipeline.py][0m
+[0m[1maws_s3_object.dag_validation[0]: Creation complete after 1s [id=dags/bankguard_validation.py][0m
+[0m[1m[32m
+Apply complete! Resources: 1 added, 1 changed, 0 destroyed.[0m
+[0m[1m[32m
+Outputs:
+
+[0malerts_topic_arn = "arn:aws:sns:eu-central-1:977989887698:bankguard-alerts"
+athena_workgroup = "bankguard"
+bucket_name = "bankguard-977989887698-eu-central-1"
+github_deploy_role_arn = "arn:aws:iam::977989887698:role/bankguard-github-deploy"
+glue_database = "bankguard"
+glue_job_name = "bankguard-etl"
+kms_key_arn = "arn:aws:kms:eu-central-1:977989887698:key/7ec8608d-7adc-4093-9f4b-42121a218a63"
+mwaa_webserver_url = "c68f2547-36d4-437f-b296-bda8954ed805.c9.airflow.eu-central-1.on.aws"
+trigger_function_name = "bankguard-start-glue-job"

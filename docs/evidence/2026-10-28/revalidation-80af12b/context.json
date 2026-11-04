@@ -1,0 +1,21 @@
+{
+  "started_at": "2026-10-28T20:37:38.711339+00:00",
+  "commit": "80af12bdfcd373b46651ac51bc7996a659913524",
+  "branch": "feature/bankguard",
+  "etl_release": "bc662abf70e0f9b5bda599d051d2354fb22090dac63457b7c2ce285bfdfb5f93",
+  "local_tests_passed": 243,
+  "region": "eu-central-1",
+  "bucket": "bankguard-977989887698-eu-central-1",
+  "job": "bankguard-etl",
+  "mwaa": "bankguard-airflow",
+  "finished_verification_at": "2026-10-28T20:52:32.422058+00:00",
+  "additional_local_fixes": [
+    "Ignore semicolons inside SQL comments and quoted text",
+    "Select immutable successful snapshots by --run-id"
+  ],
+  "verification_script_sha256": "4d708835438cb2712fa3029a1fe10d3fee6e45dd0ba00475e54679216fffed67",
+  "receipt_reader_sha256": "1389b556af2b2f6b3324ea177f66ddda1f6a3f068f42c15235efdddf2605bbeb",
+  "additional_local_fixes_committed": false,
+  "deployment_working_tree_clean": true,
+  "final_working_tree_clean": false
+}

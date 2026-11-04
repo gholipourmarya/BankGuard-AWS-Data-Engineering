@@ -44,7 +44,7 @@ locals {
   audit_columns  = { run_id = "string", source_file = "string", ingestion_timestamp = "string" }
 
   curated_tables = {
-    customers = merge({ customer_id = "string", name = "string", country = "string" }, local.audit_columns)
+    customers = merge({ customer_id = "string", name = "string", country = "string", email = "string", tel = "string" }, local.audit_columns)
     accounts  = merge({ account_id = "string", customer_id = "string", status = "string" }, local.audit_columns)
   }
 

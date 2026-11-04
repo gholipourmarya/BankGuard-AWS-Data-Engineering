@@ -1,0 +1,4 @@
+{
+  "Script": "s3://bankguard-977989887698-eu-central-1/releases/bc662abf70e0f9b5bda599d051d2354fb22090dac63457b7c2ce285bfdfb5f93/banking_etl.py",
+  "Library": "s3://bankguard-977989887698-eu-central-1/releases/bc662abf70e0f9b5bda599d051d2354fb22090dac63457b7c2ce285bfdfb5f93/src.zip"
+}

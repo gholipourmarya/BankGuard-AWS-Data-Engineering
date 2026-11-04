@@ -1,0 +1,59 @@
+{
+  "checked_at": "2026-10-28T21:29:37.923541+00:00",
+  "checks": {
+    "mwaa": {
+      "exit_code": 254,
+      "output": null,
+      "error": "aws: [ERROR]: An error occurred (ResourceNotFoundException) when calling the GetEnvironment operation: Environment bankguard-airflow not found."
+    },
+    "nat": {
+      "exit_code": 0,
+      "output": [
+        {
+          "Id": "nat-08001c20ad61f8ea5",
+          "State": "deleted"
+        }
+      ],
+      "error": ""
+    },
+    "vpc": {
+      "exit_code": 254,
+      "output": null,
+      "error": "aws: [ERROR]: An error occurred (InvalidVpcID.NotFound) when calling the DescribeVpcs operation: The vpc ID 'vpc-031fa261a84cf34d1' does not exist"
+    },
+    "lake_bucket": {
+      "exit_code": 254,
+      "output": null,
+      "error": "aws: [ERROR]: An error occurred (404) when calling the HeadBucket operation: Not Found"
+    },
+    "mwaa_bucket": {
+      "exit_code": 254,
+      "output": null,
+      "error": "aws: [ERROR]: An error occurred (404) when calling the HeadBucket operation: Not Found"
+    },
+    "glue_job": {
+      "exit_code": 254,
+      "output": null,
+      "error": "aws: [ERROR]: An error occurred (EntityNotFoundException) when calling the GetJob operation: Job not found."
+    },
+    "catalogs": {
+      "exit_code": 0,
+      "output": [],
+      "error": ""
+    },
+    "kms": {
+      "exit_code": 0,
+      "output": {
+        "KeyId": "7ec8608d-7adc-4093-9f4b-42121a218a63",
+        "KeyState": "PendingDeletion",
+        "DeletionDate": "2026-11-04T22:27:59.417000+01:00"
+      },
+      "error": ""
+    },
+    "shared_oidc": {
+      "exit_code": 0,
+      "output": "token.actions.githubusercontent.com",
+      "error": ""
+    }
+  }
+}

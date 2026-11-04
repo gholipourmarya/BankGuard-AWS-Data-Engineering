@@ -1,0 +1,61 @@
+aws_security_group.mwaa[0]: Destroying... [id=sg-08c75af51a7d9951c]
+aws_s3_object.dag[0]: Destroying... [id=dags/bankguard_pipeline.py]
+aws_route_table_association.private[1]: Destroying... [id=rtbassoc-03125aa0cf84df032]
+aws_route_table_association.private[0]: Destroying... [id=rtbassoc-063448de9a1040a81]
+aws_iam_role_policy.mwaa[0]: Destroying... [id=bankguard-mwaa-execution:bankguard-mwaa-execution]
+aws_s3_object.dag_validation[0]: Destroying... [id=dags/bankguard_validation.py]
+aws_s3_object.dag_config[0]: Destroying... [id=dags/bankguard_config.py]
+aws_s3_object.dag_config[0]: Destruction complete after 1s
+aws_s3_object.dag_validation[0]: Destruction complete after 1s
+aws_s3_object.dag[0]: Destruction complete after 1s
+aws_s3_bucket_versioning.mwaa[0]: Destroying... [id=bankguard-mwaa-977989887698-eu-central-1]
+aws_route_table_association.private[0]: Destruction complete after 1s
+aws_route_table_association.private[1]: Destruction complete after 1s
+aws_route_table.private[0]: Destroying... [id=rtb-072c50db3c7df132f]
+aws_subnet.private[1]: Destroying... [id=subnet-052416f6b9cc16f35]
+aws_subnet.private[0]: Destroying... [id=subnet-09f1ed4a53e6a92d9]
+aws_iam_role_policy.mwaa[0]: Destruction complete after 1s
+aws_glue_job.etl: Destroying... [id=bankguard-etl]
+aws_athena_workgroup.bankguard: Destroying... [id=bankguard]
+aws_iam_role.mwaa[0]: Destroying... [id=bankguard-mwaa-execution]
+aws_s3_bucket_versioning.mwaa[0]: Destruction complete after 0s
+aws_s3_bucket.mwaa[0]: Destroying... [id=bankguard-mwaa-977989887698-eu-central-1]
+aws_glue_job.etl: Destruction complete after 0s
+aws_glue_catalog_database.bankguard: Destroying... [id=977989887698:bankguard]
+aws_s3_object.src_zip: Destroying... [id=releases/613339f009050b35c8206a03fcd196349b2160328fc240b9fb6369e8c0c6f6b5/src.zip]
+aws_s3_object.glue_script: Destroying... [id=releases/613339f009050b35c8206a03fcd196349b2160328fc240b9fb6369e8c0c6f6b5/banking_etl.py]
+aws_athena_workgroup.bankguard: Destruction complete after 0s
+aws_iam_role.glue: Destroying... [id=bankguard-glue-role]
+aws_security_group.mwaa[0]: Destruction complete after 1s
+aws_kms_key.lake: Destroying... [id=7ec8608d-7adc-4093-9f4b-42121a218a63]
+aws_glue_catalog_database.bankguard: Destruction complete after 0s
+aws_s3_object.src_zip: Destruction complete after 0s
+aws_subnet.private[1]: Destruction complete after 0s
+aws_subnet.private[0]: Destruction complete after 0s
+aws_iam_role.mwaa[0]: Destruction complete after 0s
+aws_s3_object.glue_script: Destruction complete after 0s
+aws_route_table.private[0]: Destruction complete after 0s
+aws_s3_bucket.mwaa[0]: Destruction complete after 0s
+aws_s3_bucket.lake: Destroying... [id=bankguard-977989887698-eu-central-1]
+aws_nat_gateway.mwaa[0]: Destroying... [id=nat-08001c20ad61f8ea5]
+aws_kms_key.lake: Destruction complete after 1s
+aws_iam_role.glue: Destruction complete after 1s
+aws_s3_bucket.lake: Still destroying... [id=bankguard-977989887698-eu-central-1, 00m10s elapsed]
+aws_nat_gateway.mwaa[0]: Still destroying... [id=nat-08001c20ad61f8ea5, 00m10s elapsed]
+aws_s3_bucket.lake: Destruction complete after 19s
+aws_nat_gateway.mwaa[0]: Still destroying... [id=nat-08001c20ad61f8ea5, 00m20s elapsed]
+aws_nat_gateway.mwaa[0]: Still destroying... [id=nat-08001c20ad61f8ea5, 00m30s elapsed]
+aws_nat_gateway.mwaa[0]: Still destroying... [id=nat-08001c20ad61f8ea5, 00m40s elapsed]
+aws_nat_gateway.mwaa[0]: Destruction complete after 41s
+aws_internet_gateway.mwaa[0]: Destroying... [id=igw-0d4681c58f73929f8]
+aws_subnet.public[0]: Destroying... [id=subnet-03a0f1e40ec1a0524]
+aws_subnet.public[1]: Destroying... [id=subnet-0b51626211b1e6389]
+aws_eip.nat[0]: Destroying... [id=eipalloc-099d5f912c832b77b]
+aws_internet_gateway.mwaa[0]: Destruction complete after 0s
+aws_subnet.public[0]: Destruction complete after 0s
+aws_subnet.public[1]: Destruction complete after 1s
+aws_vpc.mwaa[0]: Destroying... [id=vpc-031fa261a84cf34d1]
+aws_vpc.mwaa[0]: Destruction complete after 0s
+aws_eip.nat[0]: Destruction complete after 1s
+
+Apply complete! Resources: 0 added, 0 changed, 27 destroyed.

@@ -69,6 +69,9 @@ resource "aws_s3_object" "src_zip" {
   source = data.archive_file.src.output_path
   etag   = data.archive_file.src.output_md5
 
+  # Bucket creation alone does not establish its encryption/versioning defaults.
+  depends_on = [aws_s3_bucket_server_side_encryption_configuration.lake, aws_s3_bucket_versioning.lake]
+
   # Terraform uploads the first version; later code updates come from GitHub Actions.
   lifecycle {
     ignore_changes = [key, source, etag]
@@ -80,6 +83,8 @@ resource "aws_s3_object" "glue_script" {
   key    = "releases/${local.initial_release_id}/banking_etl.py"
   source = "${path.module}/../glue/banking_etl.py"
   etag   = filemd5("${path.module}/../glue/banking_etl.py")
+
+  depends_on = [aws_s3_bucket_server_side_encryption_configuration.lake, aws_s3_bucket_versioning.lake]
 
   lifecycle {
     ignore_changes = [key, source, etag]

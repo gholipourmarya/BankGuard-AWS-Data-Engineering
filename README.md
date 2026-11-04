@@ -5,6 +5,8 @@ BankGuard prüft Transaktionsdateien aus mehreren Systemen, sortiert fehlerhafte
 
 IHK-Projekt, Cloud Data Engineering Specialist (Prüfung am 10. November 2026). Alle Daten sind synthetisch; es werden keine echten Kundendaten verwendet.
 
+**Betriebsstatus, 04.11.2026:** Die Infrastruktur wurde erneut bereitgestellt und ist aktiv, einschließlich MWAA und NAT-Gateway. Zwei MWAA-Läufe waren erfolgreich; der AWS-Abgleich bestätigt die Ausgaben aller drei Datensätze. [AWS-Prüfung](docs/evidence/2026-11-04/aws-verification.json), [MWAA-Läufe](docs/evidence/2026-11-04/airflow-runs.json). Der [Abbau vom 28.10.2026](docs/evidence/2026-10-28/terraform-destroy/README.md) betrifft die frühere Bereitstellung.
+
 ## Inhalt
 
 1. [Das Problem](#das-problem)
@@ -29,7 +31,7 @@ Banken bekommen Transaktionsdateien aus mehreren Systemen. Darin stehen fehlende
 
 BankGuard liest drei Dateien (Kunden, Konten, Transaktionen), prüft jeden Datensatz und trennt das Ergebnis:
 
-- **Gültige Datensätze** kommen als nach Datum aufgeteiltes Parquet in den Snapshot-Bereich `snapshots/<run-id>/curated/` und sind per SQL abfragbar (Athena).
+- **Gültige Datensätze** kommen als Parquet in den Snapshot-Bereich `snapshots/<run-id>/curated/` und sind per SQL abfragbar (Athena). Transaktionen werden nach Datum partitioniert; Kunden und Konten werden ohne Datumspartitionierung gespeichert.
 - **Fehlerhafte Datensätze** kommen mit **allen** Ablehnungsgründen in den Snapshot-Bereich `snapshots/<run-id>/rejected/`. Kein Datensatz wird still verworfen.
 - Die **Originaldateien** liegen pro Datenpaket unverändert unter `raw/batches/<id>/`. Alte S3-Versionen werden gemäß Lifecycle nach 30 Tagen gelöscht.
 
@@ -47,7 +49,7 @@ customers.csv   accounts.csv   transactions.csv
    Snapshot curated/      Snapshot rejected/
           |
    published/current.json  -> vollständige Snapshot-Datenbank
-   nach Datum aufgeteilt
+   Transaktionen nach Datum partitioniert
           |
           v
    Glue Data Catalog  ->  Athena (SQL-Berichte)
@@ -63,20 +65,23 @@ Jede Transaktion nennt ihr Herkunftssystem (`CORE_BANKING`, `CARDS`, `ONLINE_BAN
 
 Ein Datensatz kann mehrere Fehler haben; alle werden in `error_reasons` gespeichert. Abweichende CSV-Zeilenlängen erhalten `INVALID_COLUMN_COUNT`; zusätzliche Werte bleiben erhalten. Ungültige Kopfzeilen und CSV-Syntaxfehler stoppen den Lauf ausdrücklich.
 
+`customers.csv` unterstützt die optionalen Spalten `email` und `tel`. Alte Kundendateien ohne diese Spalten bleiben zulässig. Ausgefüllte Werte werden auf E-Mail- bzw. Telefonnummernformat geprüft; fehlende Kontaktwerte werden in akzeptierten Ausgaben als leere Zeichenketten gespeichert. Die genauen Formate stehen im [Datenmodell](docs/data-model.md).
+
 | Regel | Fehlercodes |
 | --- | --- |
 | Pflichtfelder vorhanden (leer und `NULL` zählen als fehlend) | `MISSING_<FELD>`, z. B. `MISSING_AMOUNT` |
 | IDs enthalten keine eingebetteten ASCII-/Unicode-Steuerzeichen (Kategorie `Cc`) | `INVALID_CUSTOMER_ID`, `INVALID_ACCOUNT_ID`, `INVALID_TRANSACTION_ID` |
-| Eindeutige IDs: Die Zeile mit der **niedrigsten Zeilennummer** bleibt, spätere werden abgelehnt | `DUPLICATE_TRANSACTION_ID`, `DUPLICATE_ACCOUNT_ID`, `DUPLICATE_CUSTOMER_ID`, `DUPLICATE_CONFLICTING_CONTENT` |
+| Eindeutige IDs: Die Zeile mit der **niedrigsten Zeilennummer** wird anhand ihrer eigenen Werte geprüft; spätere Vorkommen werden auch dann abgelehnt, wenn das Original ungültig ist. Abweichende Transaktionsinhalte erhalten zusätzlich `DUPLICATE_CONFLICTING_CONTENT` | `DUPLICATE_TRANSACTION_ID`, `DUPLICATE_ACCOUNT_ID`, `DUPLICATE_CUSTOMER_ID`, `DUPLICATE_CONFLICTING_CONTENT` |
 | Betrag passt exakt in `DECIMAL(18,2)`, Datum im Format `JJJJ-MM-TT` | `INVALID_AMOUNT`, `INVALID_DATE` |
 | Währung `EUR` oder `USD`, bekannte Transaktionsart und Herkunftssystem | `INVALID_CURRENCY`, `INVALID_TRANSACTION_TYPE`, `INVALID_SOURCE_SYSTEM` |
 | Betrag positiv; negativ nur bei `REFUND` und `REVERSAL`; null wird abgelehnt | `AMOUNT_NOT_ALLOWED_FOR_TYPE` |
 | Transaktion verweist auf gültiges Konto, Konto auf gültigen Kunden | `ACCOUNT_NOT_FOUND`, `CUSTOMER_NOT_FOUND` |
 | Kontostatus `Active` oder `Closed` | `INVALID_STATUS` |
+| Ausgefüllte Kundenkontakte erfüllen die Formatregeln | `INVALID_EMAIL`, `INVALID_TEL` |
 
-Zusätzlich muss bei jedem Lauf gelten: **Eingang = akzeptiert + abgelehnt**, auch für jedes Herkunftssystem einzeln.
+Zusätzlich muss bei jedem Lauf gelten: **Eingang = akzeptiert + abgelehnt**, auch für jede Datei und jedes Herkunftssystem einzeln. Die obersten Zähler in `metrics.json` und `by_source_system` betreffen Transaktionen; `by_dataset` enthält Kunden, Konten und Transaktionen getrennt, `overall` den Gesamtstand. Vorhandene Erfolgsquoten müssen mit den Zählern übereinstimmen.
 
-Beispiel eines abgelehnten Datensatzes:
+Auszug aus einem abgelehnten Datensatz:
 
 ```json
 {"transaction_id": "T0000123", "account_id": "A90012", "amount": "200.00",
@@ -86,43 +91,52 @@ Beispiel eines abgelehnten Datensatzes:
 
 **Nacharbeits-Bericht** (`rework_report.csv`): pro System und Fehlergrund die Anzahl betroffener Datensätze und bis zu fünf Beispiel-IDs. Damit weiß jedes Quellsystem, was es korrigieren muss.
 
+Zusätzlich enthält `dataset_rework_report.csv` lokal die Fehler aller drei Dateien mit Datensatzart, Fehlergrund und Beispiel-IDs. Glue schreibt diesen Gesamtbericht nach `snapshots/<run-id>/dataset_rework_report.json`.
+
+CloudWatch erhält getrennte Kennzahlen für jede Datei und den Gesamtstand, jeweils mit den Dimensionen `JobName` und `Dataset`. Kunden, Konten und Transaktionen haben eigene Qualitätsalarme, zusätzlich besteht ein Gesamtalarm. Leere Dateien liefern Zähler mit Wert null und keine Erfolgsquote.
+
 ## Projektstand
+
+**Stand vom 04.11.2026:** 378 Tests lokal und im aktuellen Docker-Image bestanden. Der aktuelle Stand ist auf AWS bereitgestellt. Das Prüfskript bestätigt Kunden, Konten und Transaktionen mit zwölf Athena-Abfragen sowie dem CSV-/Parquet-Vergleich; zwei MWAA-Läufe waren erfolgreich. Die SNS-E-Mail-Subscription ist bestätigt; die Zustellung der neuen Qualitätsalarme wurde noch nicht erneut getestet. Frühere CI- und Alarmnachweise behalten ihren angegebenen Versions- und Datumsbezug.
 
 | Teil | Stand |
 | --- | --- |
 | Testdaten-Generator, Prüfregeln, Verarbeitung, Nacharbeits-Bericht, Regressionstests | **Fertig und lokal ausgeführt** |
-| Terraform, Glue-Job, Athena-Tabellen, SQL | **Auf AWS ausgeführt und am 28.10.2026 geprüft** |
-| CloudWatch, SNS, Verschlüsselung und automatischer Dateistart | **Auf AWS geprüft; Fehleralarm über EventBridge/SNS zugestellt** |
-| GitHub Actions | [CI erfolgreich](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40662802001); [OIDC-Deployment erfolgreich](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40739499524) auf `feature/bankguard` |
-| Airflow / MWAA | **Auf AWS ausgeführt:** `bankguard_pipeline` und alle vier Tasks erfolgreich am 28.10.2026; [Nachweis](docs/evidence/2026-10-28/airflow-tasks.json) |
-| AWS-Nachweise | [Messwerte, Query-IDs, Logs und CloudWatch-Diagramm](docs/evidence/2026-10-28/aws-verification.json) gesichert |
+| Terraform, Glue-Job, Athena-Tabellen, SQL | **Erneut bereitgestellt und am 04.11.2026 auf AWS geprüft** |
+| CloudWatch, SNS, Verschlüsselung und automatischer Dateistart | Am 04.11.2026 bereitgestellt; automatischer Paketlauf erfolgreich. Alarmzustellung über EventBridge/SNS am 28.10.2026 geprüft; im neuen Deployment nicht erneut getestet |
+| GitHub Actions (historische Nachweise) | [CI erfolgreich](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40662802001); [OIDC-Deployment erfolgreich](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40739499524) auf `feature/bankguard` |
+| Airflow / MWAA | **Zwei erfolgreiche Läufe am 04.11.2026**, Airflow 3.3.1; [Nachweis](docs/evidence/2026-11-04/airflow-runs.json) |
+| AWS-Nachweise | [Aktueller Abgleich aller drei Datensätze und zwölf Athena-Abfragen](docs/evidence/2026-11-04/aws-verification.json); [historische Messwerte](docs/evidence/2026-10-28/aws-verification.json) |
 
-Die Tests wurden mit `pytest -q` ausgeführt. Die aktuelle Anzahl steht in dessen Ausgabe. Es wird nichts als AWS-Ergebnis ausgegeben, was nicht gemessen wurde.
+Die Tests wurden mit `python -m pytest -q` ausgeführt. Die aktuelle Anzahl steht in dessen Ausgabe. Es wird nichts als AWS-Ergebnis ausgegeben, was nicht gemessen wurde.
 
 ## Schnellstart
 
-Ohne AWS, mit Python 3.
+Ohne AWS, empfohlen mit Python 3.12 wie in CI und Docker. Alle Befehle aus dem Projektverzeichnis ausführen. Für die Verarbeitung des kleinen Beispiels reicht die Python-Standardbibliothek; für Tests und AWS-Skripte die unten genannten Abhängigkeiten installieren.
 
-**Beispiel mit 11 Zeilen:** fünf gültige und sechs abgelehnte Datensätze, je einer pro Fehlerart.
+**Beispiel mit 11 Transaktionen:** fünf gültige und sechs abgelehnte Datensätze für sechs ausgewählte Fehlerarten. Die [Beispielerklärung](examples/README.md) nennt jede Fehlerzeile und die erwarteten Ausgaben.
 
 ```bash
 python -m src.transform examples output_example
 cat output_example/rework_report.csv
+cat output_example/dataset_rework_report.csv
 ```
 
 **Alles mit 50.000 Transaktionen:**
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 python -m src.generate_data           # erzeugt data/*.csv und data/injected_errors.json
 python -m src.transform data output   # prüft, schreibt output/ und zeigt die Kennzahlen
-pytest -q
+python -m pytest -q
 ```
 
 Optionen des Generators: `--transactions N`, `--seed N`, `--out ORDNER`. Er speichert, welche Fehler eingebaut wurden. Daran messen die Tests, ob die Prüfung alle findet.
 
-Mit Docker: `docker build -t bankguard . && docker run --rm bankguard` (am 28.10.2026 erfolgreich gebaut und ausgeführt: 113 Tests sowie vollständige Datenverarbeitung).
+`requirements.txt` verwendet die festen Paketversionen aus `requirements.lock` für lokale Tests, CI und Docker. Der Docker-Build verwendet zusätzlich einen festen Digest des Python-Basisimages. Versionsänderungen werden bewusst zusammen mit den Tests geprüft. Die optionale Airflow-Umgebung hat eigene Constraints und wird getrennt installiert; siehe [Betrieb](docs/operations.md#6-optionales-airflow-und-mwaa).
+
+Mit Docker: `docker build -t bankguard . && docker run --rm bankguard`. Am 04.11.2026 erfolgreich gebaut und ausgeführt: 378 Tests sowie die vollständige Datenverarbeitung. Das Image enthält das feste Basisimage und die Lockdatei; lokale Python-Sicherungen, Umgebungen und Terraform-Dateien mit lokalem Zustand sind ausgeschlossen.
 
 ## Ergebnisse
 
@@ -135,32 +149,54 @@ Lokaler Lauf mit 51.000 Transaktionen (Startwert 42):
 | Anteil fehlerfrei | 93,14 % |
 | Eingespielte Fehler | 3.750 |
 | Gefunden / übersehen / falsch gemeldet | 3.750 / 0 / 0 |
-| Dauer der Prüfung | etwa 3,6 Sekunden im aktuellen lokalen Prüflauf |
+| Dauer der Prüfung | etwa 3,6 Sekunden in einem früheren lokalen Messlauf; versions- und umgebungsabhängig |
 
-Das zeigt, dass die Regeln jeden Fehler finden, den der Generator erzeugt. Es beweist nicht, dass sie jeden Fehler in echten Daten finden. Die Fehlerraten pro Herkunftssystem sind ähnlich (92,7 bis 93,3 %), weil die Fehler gleichmäßig eingespielt werden; das sagt nichts über echte Systeme. **AWS-Lauf vom 28.10.2026:** ebenfalls 51.000 Eingang, 47.500 gültig und 3.500 abgelehnt; Glue-Ausführungszeit 135 Sekunden bei zwei G.1X-Workern. Athena bestätigt die Anzahlen. [Nachweise](docs/evidence/2026-10-28/aws-verification.json), [Formatvergleich und Kosten](docs/cost-estimate.md).
+Die Tabellenwerte beziehen sich auf Transaktionen. Mit zusätzlich 2.500 gültigen Kunden und 2.500 gültigen Konten beträgt die Gesamtquote (`overall`) 93,75 %.
+
+Das zeigt, dass die Regeln jeden Fehler finden, den der Generator erzeugt. Es beweist nicht, dass sie jeden Fehler in echten Daten finden. Die Erfolgsquoten pro Herkunftssystem sind ähnlich (92,7 bis 93,3 %), weil die Fehler gleichmäßig eingespielt werden; das sagt nichts über echte Systeme. **AWS-Lauf vom 28.10.2026:** ebenfalls 51.000 Eingang, 47.500 gültig und 3.500 abgelehnt; Glue-Ausführungszeit 135 Sekunden bei zwei G.1X-Workern. Athena bestätigt die Anzahlen. [Nachweise](docs/evidence/2026-10-28/aws-verification.json), [Formatvergleich und Kosten](docs/cost-estimate.md).
+
+Historische Nachprüfung des ETL-Releases aus Commit `80af12b` am 28.10.2026: **AWS-Deployment und Integrationstests erfolgreich**. Das vollständige Paket enthält zusätzlich eine absichtlich ungültige Unicode-ID (`U+0085`): **51.001 Eingang = 47.500 akzeptiert + 3.501 abgelehnt**, Glue-Ausführungszeit **127 Sekunden**. Der MWAA-DAG bestand außerdem mit **1 Eingang, 0 akzeptiert und 1 abgelehnt**; alle vier Tasks sind erfolgreich. Das damalige Prüfskript bestätigte beide Snapshots und übersprang bei null akzeptierten Transaktionen den Formatvergleich. Damaliger lokaler Teststand: **243 Tests bestanden**. [Nachweise dieser Nachprüfung](docs/evidence/2026-10-28/revalidation-80af12b/summary.json), [vollständige Athena-Prüfung](docs/evidence/2026-10-28/revalidation-80af12b/full-verification.json). Frühere Messwerte und Bilder behalten ihren damaligen Versionsbezug.
 
 ## Auf AWS bereitstellen
 
-Am 28.10.2026 in `eu-central-1` ausgeführt. Ein neuer Paket-Upload startete Lambda und Glue automatisch; Athena-Berichte und der Fehlerfall wurden geprüft. Für AWS-CLI-Login-Sitzungen mit dem gepinnten Terraform-Provider siehe [Betrieb](docs/operations.md).
+Zuletzt am 04.11.2026 in `eu-central-1` bereitgestellt und geprüft. Die folgenden Befehle werden aus dem Projektverzeichnis ausgeführt. Der Helfer `scripts/aws_terraform.py` macht eine gültige AWS-CLI-Anmeldung mit `aws login` für den gepinnten Terraform-Provider 5.x nutzbar und ermöglicht die Erneuerung kurzlebiger Zugangsdaten während langer MWAA-Erstellungen; siehe [Betrieb](docs/operations.md).
 
-Voraussetzungen: AWS-Konto, konfigurierte AWS CLI, Terraform, Rechte für S3, Glue, IAM, Athena, SNS, EventBridge und Budgets.
+Voraussetzungen: die Python-Umgebung mit `requirements.txt` aus dem Schnellstart, erzeugte Eingabedateien unter `data/`, ein AWS-Konto, eine gültige AWS-CLI-Anmeldung und Terraform ab 1.5. Die AWS-Identität benötigt Rechte für die in `terraform/` definierten Ressourcen, einschließlich S3, Glue, IAM, KMS, Lambda, CloudWatch, Athena, SNS, EventBridge und Budgets; bei MWAA zusätzlich dessen Netzwerkressourcen.
 
 ```bash
-cd terraform
-terraform init
-terraform fmt
-terraform validate
-terraform apply -var="alert_email=du@example.com"   # Abo-Mail von AWS bestätigen
-BUCKET=$(terraform output -raw bucket_name)
-cd ..
+terraform -chdir=terraform init
+terraform -chdir=terraform fmt
+terraform -chdir=terraform validate
+python scripts/aws_terraform.py plan -var="alert_email=du@example.com"
+python scripts/aws_terraform.py apply -var="alert_email=du@example.com"   # Abo-Mail von AWS bestätigen
+BUCKET=$(terraform -chdir=terraform output -raw bucket_name)
 python scripts/upload_dataset.py "$BUCKET" data
 ```
 
-Das Upload-Skript schreibt die drei Dateien unter eine neue Paket-ID und zuletzt `ready.json`. Erst diese Freigabe startet den Lambda-Trigger. Bereits eingereichte Pakete werden anhand der Glue-Laufhistorie erkannt; weitere Pakete werden in Glue eingereiht. Einzelheiten und Wiederholungen: `docs/operations.md`. Nach erfolgreichem Glue-Lauf mit `python scripts/current_snapshot.py "$BUCKET"` die veröffentlichte Datenbank ermitteln und darin die Abfragen aus `sql/` ausführen. Die Workgroup kommt aus Terraform; die Terraform-Datenbank dient ausschließlich als Schemavorlage.
+Das Upload-Skript schreibt die drei Dateien unter eine neue Paket-ID und zuletzt `ready.json`. Erst diese Freigabe startet den Lambda-Trigger. Bereits eingereichte Pakete werden anhand der Glue-Laufhistorie erkannt. Eine dauerhafte bedingte S3-Sperre unter `submissions/` verhindert gleichzeitige automatische Einreichungen desselben Pakets. Weitere Pakete werden in Glue eingereiht. Einzelheiten und Wiederholungen: `docs/operations.md`. Nach erfolgreichem Glue-Lauf mit `python scripts/current_snapshot.py "$BUCKET"` die veröffentlichte Datenbank ermitteln und darin die Abfragen aus `sql/` ausführen. Die Workgroup kommt aus Terraform; die Terraform-Datenbank dient ausschließlich als Schemavorlage.
 
-Aufräumen: zuerst Snapshot-Kataloge mit `scripts/cleanup_snapshot_catalogs.py` gemäß `docs/operations.md` entfernen, danach `terraform destroy`. Bucket und Athena-Workgroup werden mit allen Inhalten gelöscht (`force_destroy = true`). Das ist für diese Testdaten gewollt und darf **nicht** für Projekte mit echten Daten übernommen werden.
+Bei einer bestehenden Installation benötigen die geänderten Qualitätsalarme und das Dashboard ein Terraform-Apply. Der ETL-Code wird als eigenes Release aktualisiert; Terraform behält den zuvor gewählten Code-Stand bei:
 
-Optional und standardmäßig **aus**: Amazon MWAA (`enable_mwaa=true`). Für die Demo ist `bankguard-airflow` bereitgestellt; die Airflow-Weboberfläche und ein vollständiger DAG-Lauf sind geprüft. Der manuelle DAG erwartet die drei CSV-Dateien direkt unter `raw/`. MWAA und NAT-Gateway verursachen laufende Kosten. Anleitung: [Betrieb, Abschnitt 6](docs/operations.md#6-optionales-airflow-und-mwaa).
+```bash
+GLUE_JOB=$(terraform -chdir=terraform output -raw glue_job_name)
+python scripts/deploy_release.py "$BUCKET" "$GLUE_JOB"
+```
+
+Das Release ergänzt die Kontaktspalten beim Anlegen neuer Snapshot-Kataloge auch bei älteren Schemavorlagen. Das Prüfskript gleicht bei neuen Quittungen zusätzlich Kunden- und Kontenausgaben ab; `verified_datasets` nennt die geprüften Dateien. Einzelheiten: [Betrieb](docs/operations.md).
+
+Aufräumen: zuerst aktive Glue-Läufe stoppen oder auslaufen lassen. Dann aus dem Projektverzeichnis die Snapshot-Kataloge auflisten und anschließend löschen:
+
+```bash
+TEMPLATE_DB=$(terraform -chdir=terraform output -raw glue_database)
+python scripts/cleanup_snapshot_catalogs.py "$BUCKET" "$TEMPLATE_DB" --include-published
+# Nach Prüfung der Liste einschließlich des veröffentlichten Katalogs löschen:
+python scripts/cleanup_snapshot_catalogs.py "$BUCKET" "$TEMPLATE_DB" --delete --include-published
+python scripts/aws_terraform.py destroy
+```
+
+Bucket und Athena-Workgroup werden mit allen Inhalten gelöscht (`force_destroy = true`). Das ist für diese Testdaten gewollt und darf **nicht** für Projekte mit echten Daten übernommen werden.
+
+Optional und standardmäßig **aus**: Amazon MWAA (`enable_mwaa=true`). Die frühere Demo-Infrastruktur wurde am 28.10.2026 entfernt. Am 04.11.2026 wurde `bankguard-airflow` erneut bereitgestellt und mit zwei erfolgreichen DAG-Läufen geprüft; diese Bereitstellung ist aktiv. Der manuelle DAG erwartet die drei CSV-Dateien direkt unter `raw/`. MWAA und NAT-Gateway verursachen laufende Kosten. Anleitung: [Betrieb, Abschnitt 6](docs/operations.md#6-optionales-airflow-und-mwaa).
 
 ## Projektstruktur
 
@@ -201,6 +237,7 @@ BankGuard-AWS-Data-Engineering/
 ├── airflow/
 │   ├── dags/
 │   │   └── bankguard_pipeline.py
+│   ├── requirements.lock
 │   └── requirements.txt
 ├── scripts/
 │   ├── athena_scan_compare.py
@@ -211,15 +248,22 @@ BankGuard-AWS-Data-Engineering/
 │   ├── upload_dataset.py
 │   └── verify_aws.py
 ├── examples/
+│   ├── README.md
+│   ├── accounts.csv
+│   ├── customers.csv
+│   └── transactions.csv
 ├── tests/
 │   ├── __init__.py
 │   ├── test_aws_scripts.py
+│   ├── test_customer_contacts.py
 │   ├── test_glue_output.py
 │   ├── test_lambda_trigger.py
 │   ├── test_problem_statement.py
+│   ├── test_quality_monitoring.py
 │   ├── test_release_and_monitor.py
 │   ├── test_sdk_contract.py
 │   ├── test_snapshot_publication.py
+│   ├── test_sql_reports.py
 │   ├── test_terraform_credentials.py
 │   ├── test_transform.py
 │   └── test_validation.py
@@ -241,6 +285,7 @@ BankGuard-AWS-Data-Engineering/
 ├── Dockerfile
 ├── README.md
 ├── README_ENG.md
+├── requirements.lock
 ├── requirements.txt
 └── pytest.ini
 ```
@@ -249,7 +294,7 @@ Die Übersicht zeigt Quellcode und Projektdokumentation. Generierte Daten, Ausga
 
 ## Tests
 
-Automatische Tests; die aktuelle Anzahl zeigt `pytest -q`. `tests/test_problem_statement.py` hat einen Test pro Satz der Problembeschreibung, unter anderem:
+Automatische Tests; die aktuelle Anzahl zeigt `python -m pytest -q`. `tests/test_problem_statement.py` hat einen Test pro Satz der Problembeschreibung, unter anderem:
 
 - Das Beispiel in `examples/` liefert genau das erwartete Ergebnis.
 - **Kein Datensatz geht verloren:** Jede Eingabezeile steht genau einmal in „gültig" oder „abgelehnt".
@@ -261,7 +306,9 @@ Automatische Tests; die aktuelle Anzahl zeigt `pytest -q`. `tests/test_problem_s
 
 ## Bekannte Grenzen
 
-Der veröffentlichte Snapshot wird über ein einzelnes S3-Objekt ausgewählt. Dieses einmal auflösen und die ausgewählte Snapshot-Datenbank für alle zusammengehörigen Abfragen verwenden. Alte Snapshots und ihre Katalogdatenbanken bleiben bis zur bewussten Bereinigung bestehen. Die Validierung sammelt die kleinen Demo-Dateien im Arbeitsspeicher; große Datenmengen benötigen verteilte Regeln. Paket-IDs dürfen nicht wiederverwendet werden. Die Deduplizierung ist auf die Glue-Laufhistorie begrenzt; fehlgeschlagene oder abgelaufene Läufe erfordern einen bewussten Neustart. Der zentrale AWS-Ablauf und ein manueller Airflow-/MWAA-Lauf sind verifiziert; Langzeitbetrieb und Lastverhalten wurden nicht gemessen. Die SNS-Metrik bestätigt eine Zustellung; die Sichtbarkeit im persönlichen E-Mail-Postfach ist separat zu bestätigen.
+Ein Konto mit Status `Closed` bleibt nach den aktuellen Regeln gültig. Ein Abgleich des Transaktionsdatums mit einem Schließungszeitpunkt ist nicht implementiert. Kontaktprüfungen bestätigen nur das Format, keine Erreichbarkeit.
+
+Der veröffentlichte Snapshot wird über ein einzelnes S3-Objekt ausgewählt. Dieses einmal auflösen und die ausgewählte Snapshot-Datenbank für alle zusammengehörigen Abfragen verwenden. Alte Snapshots und ihre Katalogdatenbanken bleiben bis zur bewussten Bereinigung bestehen. Die Validierung sammelt die kleinen Demo-Dateien im Arbeitsspeicher; große Datenmengen benötigen verteilte Regeln. Paket-IDs dürfen nicht wiederverwendet werden. Dauerhafte S3-Sperren verhindern parallele automatische Starts desselben Pakets. Unterbrochene oder unklare Einreichungen sowie fehlgeschlagene oder abgelaufene Läufe erfordern eine Prüfung und gegebenenfalls einen bewussten Neustart. Bereits vor Einführung der Sperren eingereichte Pakete sind nur durch die vorhandene Glue-Historie geschützt. Der zentrale AWS-Ablauf und zwei manuelle MWAA-Läufe sind am 04.11.2026 verifiziert; Langzeitbetrieb und Lastverhalten wurden nicht gemessen. Die frühere SNS-Metrik vom 28.10.2026 bestätigt eine Zustellung im damaligen Deployment. Die Alarmzustellung im neuen Deployment und die Sichtbarkeit im persönlichen E-Mail-Postfach sind separat zu prüfen.
 
 Code-Releases liegen unter einer Inhalts-Hash-ID; Skript und Bibliothek werden erst nach vollständigem Upload gemeinsam umgeschaltet. Ein zusätzlicher Prüflauf kontrolliert alle fünf Minuten die Glue-Zustände ERROR und EXPIRED.
 
@@ -273,11 +320,11 @@ Python, Pytest, boto3, Terraform, AWS Glue, S3 und Athena bilden den Kern. GitHu
 
 ## Weitere Dokumente
 
-- `docs/data-model.md`: Datenmodell mit Diagramm, Bereiche in S3, Tabellen, Fehlercodes
+- `docs/data-model.md`: Datenmodell, Bereiche in S3, Tabellen, Fehlercodes
 - `docs/operations.md`: Automatisierung, Zugriffsrechte, Überwachung, MWAA
 - `docs/ihk-plan.md`: Zeitplan und Präsentation
 - `docs/tool-map.md`: Werkzeugliste mit ehrlichem Stand
-- `docs/cost-estimate.md`: Vorlage für die Kostenschätzung
+- [docs/cost-estimate.md](docs/cost-estimate.md): historische Messwerte, Kostenberechnung und Vorlage für weitere Nutzung
 - `docs/overview-en.md`: technische Übersicht auf Englisch
 
 *BankGuard ist eine Lern- und Demonstrationsarbeit mit synthetischen Daten, kein Produktivsystem.*

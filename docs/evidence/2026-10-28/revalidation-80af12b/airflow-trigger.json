@@ -1,0 +1,32 @@
+{
+  "RestApiStatusCode": 200,
+  "RestApiResponse": {
+    "dag_run_id": "manual__revalidation_80af12b_zero_20261028T204213Z",
+    "dag_id": "bankguard_pipeline",
+    "logical_date": "2026-10-28T20:42:13.195857Z",
+    "queued_at": "2026-10-28T20:42:16.425449Z",
+    "data_interval_start": "2026-10-28T20:42:13.195857Z",
+    "data_interval_end": "2026-10-28T20:42:13.195857Z",
+    "run_after": "2026-10-28T20:42:16.370874Z",
+    "run_type": "manual",
+    "state": "queued",
+    "triggered_by": "rest_api",
+    "triggering_user_name": "MwaaEnhancedRestApiUserFJqD2mZH",
+    "conf": {
+      "integration_test": "zero-accepted-unicode-control",
+      "commit": "80af12bdfcd373b46651ac51bc7996a659913524"
+    },
+    "note": "Verify current release: Unicode control ID rejected; zero accepted records remain a valid result",
+    "dag_versions": [
+      {
+        "id": "01a183d1-868b-7752-8006-f6dcb8cdd066",
+        "version_number": 1,
+        "dag_id": "bankguard_pipeline",
+        "bundle_name": "dags-folder",
+        "created_at": "2026-10-28T18:41:49.195459Z",
+        "dag_display_name": "bankguard_pipeline"
+      }
+    ],
+    "dag_display_name": "bankguard_pipeline"
+  }
+}

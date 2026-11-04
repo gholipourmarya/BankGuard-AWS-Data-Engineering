@@ -1,0 +1,24 @@
+{
+  "JobRun": {
+    "Id": "jr_708d1a9188178b8913369f298618cbe6cdf7e7891278af53eec3e8599f82ffe6",
+    "Attempt": 0,
+    "JobName": "bankguard-etl",
+    "JobMode": "SCRIPT",
+    "JobRunQueuingEnabled": true,
+    "StartedOn": "2026-10-28T21:42:24.780000+01:00",
+    "LastModifiedOn": "2026-10-28T21:43:59.647000+01:00",
+    "CompletedOn": "2026-10-28T21:43:59.647000+01:00",
+    "JobRunState": "SUCCEEDED",
+    "Arguments": {},
+    "PredecessorRuns": [],
+    "AllocatedCapacity": 2,
+    "ExecutionTime": 61,
+    "Timeout": 30,
+    "MaxCapacity": 2.0,
+    "WorkerType": "G.1X",
+    "NumberOfWorkers": 2,
+    "LogGroupName": "/aws-glue/jobs",
+    "GlueVersion": "4.0",
+    "DPUSeconds": 123.0
+  }
+}

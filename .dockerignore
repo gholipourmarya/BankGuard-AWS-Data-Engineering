@@ -1,7 +1,10 @@
 .git
 .venv
-__pycache__
-.pytest_cache
+.venv-airflow
+**/__pycache__/
+**/*.pyc
+**/*.py.backup
+**/.pytest_cache/
 data/*.csv
 data/*.json
 output/
@@ -10,6 +13,12 @@ terraform/.terraform
 terraform/*.tfstate*
 terraform/*.tfvars*
 terraform/*.tfplan
+terraform/crash.log
+terraform/crash.*.log
+terraform/override.tf
+terraform/override.tf.json
+terraform/*_override.tf
+terraform/*_override.tf.json
 .aws
 .env
 .env.*

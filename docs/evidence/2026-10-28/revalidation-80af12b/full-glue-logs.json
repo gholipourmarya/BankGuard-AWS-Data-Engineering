@@ -1,0 +1,10 @@
+[
+  {
+    "timestamp": 1793220295474,
+    "message": "{\"bucket\": \"bankguard-977989887698-eu-central-1\", \"event\": \"job_started\", \"run_id\": \"jr_6b9bc295becd15100fba83cb524011c1a6574b6ddd67178e14216fc6d1eb3d48\"}\n{\"bucket\": \"bankguard-977989887698-eu-central-1\", \"event\": \"reading_csv\", \"key\": \"raw/batches/33903d7dde414d2fa1061270acccd4bf/customers.csv\"}\n"
+  },
+  {
+    "timestamp": 1793220390111,
+    "message": "{\"accepted_count\": 47500, \"by_source_system\": {\"CARDS\": {\"accepted_count\": 12020, \"counts_consistent\": true, \"input_count\": 12926, \"pass_rate_percent\": 92.99, \"rejected_count\": 906}, \"CORE_BANKING\": {\"accepted_count\": 28441, \"counts_consistent\": true, \"input_count\": 30485, \"pass_rate_percent\": 93.3, \"rejected_count\": 2044}, \"ONLINE_BANKING\": {\"accepted_count\": 7039, \"counts_consistent\": true, \"input_count\": 7590, \"pass_rate_percent\": 92.74, \"rejected_count\": 551}}, \"counts_consistent\": true, \"event\": \"job_succeeded\", \"input_count\": 51001, \"pass_rate_percent\": 93.14, \"rejected_count\": 3501, \"rejections_by_reason\": {\"ACCOUNT_NOT_FOUND\": 500, \"AMOUNT_NOT_ALLOWED_FOR_TYPE\": 250, \"DUPLICATE_CONFLICTING_CONTENT\": 250, \"DUPLICATE_TRANSACTION_ID\": 1000, \"INVALID_AMOUNT\": 500, \"INVALID_CURRENCY\": 250, \"INVALID_DATE\": 500, \"INVALID_TRANSACTION_ID\": 1, \"MISSING_AMOUNT\": 500}, \"run_id\": \"jr_6b9bc295becd15100fba83cb524011c1a6574b6ddd67178e14216fc6d1eb3d48\", \"seconds\": 94.7}\n"
+  }
+]

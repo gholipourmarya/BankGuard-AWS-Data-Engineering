@@ -27,7 +27,7 @@ def load_function(relative_path, name, namespace):
 @pytest.mark.parametrize("failure", [None, "invalid_header", "truncated_body"])
 def test_s3_csv_reader_materializes_rows_and_closes_body(failure):
     content = (b"wrong,header\n" if failure == "invalid_header" else
-               '\ufeffcustomer_id,name,country\r\nC1,"Ada\r\nLovelace",DE\r\n'.encode("utf-8"))
+               '\ufeffcustomer_id,name,country,email,tel\r\nC1,"Ada\r\nLovelace",DE,ada@example.com,+49 30 23125 00001\r\n'.encode("utf-8"))
     raw = io.BytesIO(content)
     body = StreamingBody(raw, len(content) + (1 if failure == "truncated_body" else 0))
     s3 = Mock()
@@ -44,7 +44,8 @@ def test_s3_csv_reader_materializes_rows_and_closes_body(failure):
             read("customers.csv")
     else:
         rows = read("customers.csv")
-        assert rows == [{"customer_id": "C1", "name": "Ada\r\nLovelace", "country": "DE", "_line": 2}]
+        assert rows == [{"customer_id": "C1", "name": "Ada\r\nLovelace", "country": "DE",
+                         "email": "ada@example.com", "tel": "+49 30 23125 00001", "_line": 2}]
     assert raw.closed
     s3.get_object.assert_called_once_with(Bucket="test-bucket", Key="raw/batches/test/customers.csv")
 

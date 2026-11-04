@@ -375,6 +375,8 @@ resource "aws_mwaa_environment" "airflow" {
     aws_s3_object.dag,
     aws_s3_object.dag_config,
     aws_s3_object.dag_validation,
+    aws_s3_bucket_public_access_block.mwaa,
+    aws_s3_bucket_server_side_encryption_configuration.mwaa,
     aws_iam_role_policy.mwaa,
     aws_nat_gateway.mwaa,
     aws_route_table_association.private,

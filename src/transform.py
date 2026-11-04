@@ -17,23 +17,26 @@ except ImportError:  # imported as a top-level module (Glue --extra-py-files)
 
 def read_csv_rows(path):
     """Read a CSV file; each row gets its source line number in ``_line``."""
-    fields = {"customers.csv": validate.CUSTOMER_FIELDS, "accounts.csv": validate.ACCOUNT_FIELDS,
+    fields = {"customers.csv": validate.CUSTOMER_REQUIRED_FIELDS, "accounts.csv": validate.ACCOUNT_FIELDS,
               "transactions.csv": validate.TRANSACTION_FIELDS}
     with open(path, newline="", encoding="utf-8-sig") as f:
-        return parse_csv_rows(f, fields.get(os.path.basename(path)))
+        optional = validate.CUSTOMER_CONTACT_FIELDS if os.path.basename(path) == "customers.csv" else ()
+        return parse_csv_rows(f, fields.get(os.path.basename(path)), optional)
 
 
-def parse_csv_rows(stream, required_fields=None):
+def parse_csv_rows(stream, required_fields=None, optional_fields=()):
     """Shared local/Glue CSV reader, including quoted multiline fields.
 
     Invalid headers/CSV syntax fail the file explicitly. Wrong row widths are
     rejected by validation, preserving extra values and source line numbers.
+    Optional header columns may be absent; their values default to empty strings.
     """
     reader = csv.reader(stream, strict=True)
     header = next(reader, None)
     if not header or any(not field for field in header) or len(header) != len(set(header)):
         raise ValueError("CSV header is missing, empty or contains duplicate columns")
-    if required_fields is not None and set(header) != set(required_fields):
+    if required_fields is not None and not (set(required_fields) <= set(header)
+                                           <= set(required_fields) | set(optional_fields)):
         raise ValueError(f"Expected CSV columns: {', '.join(required_fields)}")
     if any(field.startswith("_") or field in {"error_reasons", "extra_values"} for field in header):
         raise ValueError("CSV header contains reserved columns")
@@ -51,6 +54,9 @@ def parse_csv_rows(stream, required_fields=None):
             row["_csv_errors"] = ["INVALID_COLUMN_COUNT"]
             if len(values) > len(header):
                 row["extra_values"] = values[len(header):]
+        for field in optional_fields:
+            if field not in header:
+                row[field] = ""
         rows.append(row)
     return rows
 
@@ -132,14 +138,39 @@ def run_pipeline(customers, accounts, transactions, run_id, ingestion_timestamp)
     def audit(rows, name):
         return add_audit_columns(rows, run_id, name, ingestion_timestamp)
 
+    datasets = {"customers": (customers, v_cust, r_cust), "accounts": (accounts, v_acc, r_acc),
+                "transactions": (transactions, v_tx, r_tx)}
+    by_dataset = {name: compute_metrics(len(rows), len(valid), rejected)
+                  for name, (rows, valid, rejected) in datasets.items()}
+    overall = compute_metrics(sum(len(rows) for rows, _, _ in datasets.values()),
+                              sum(len(valid) for _, valid, _ in datasets.values()),
+                              [row for _, _, rejected in datasets.values() for row in rejected])
     return {
         "customers": (audit(v_cust, "customers.csv"), audit(r_cust, "customers.csv")),
         "accounts": (audit(v_acc, "accounts.csv"), audit(r_acc, "accounts.csv")),
         "transactions": (audit(v_tx, "transactions.csv"), audit(r_tx, "transactions.csv")),
         "metrics": {**compute_metrics(len(transactions), len(v_tx), r_tx),
-                    "by_source_system": metrics_by_source_system(transactions, v_tx, r_tx)},
+                    "by_source_system": metrics_by_source_system(transactions, v_tx, r_tx),
+                    "by_dataset": by_dataset, "overall": overall},
         "rework_report": build_rework_report(r_tx),
+        "dataset_rework_report": build_dataset_rework_report(datasets),
     }
+
+
+def build_dataset_rework_report(datasets, max_examples=5):
+    """Include customer and account errors alongside transaction errors."""
+    report = []
+    for name, (_, _, rejected) in datasets.items():
+        id_field = {"customers": "customer_id", "accounts": "account_id",
+                    "transactions": "transaction_id"}[name]
+        groups = {}
+        for row in rejected:
+            for reason in row["error_reasons"]:
+                groups.setdefault(reason, []).append(str(row.get(id_field, "")).strip() or "(no id)")
+        for reason, ids in sorted(groups.items()):
+            report.append({"dataset": name, "error_reason": reason, "rejected_records": len(ids),
+                           "example_ids": " ".join(list(dict.fromkeys(ids))[:max_examples])})
+    return report
 
 
 def _clean(row):
@@ -167,6 +198,10 @@ def write_local_outputs(result, output_dir):
         w = csv.DictWriter(f, fieldnames=["source_system", "error_reason", "rejected_records", "example_transaction_ids"])
         w.writeheader()
         w.writerows(report)
+    with open(os.path.join(output_dir, "dataset_rework_report.csv"), "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=["dataset", "error_reason", "rejected_records", "example_ids"])
+        w.writeheader()
+        w.writerows(result["dataset_rework_report"])
     with open(os.path.join(output_dir, "metrics.json"), "w", encoding="utf-8") as f:
         json.dump(result["metrics"], f, indent=2, sort_keys=True)
 

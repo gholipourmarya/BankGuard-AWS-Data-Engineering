@@ -1,0 +1,25 @@
+{
+  "deployed_etl_commit": "80af12bdfcd373b46651ac51bc7996a659913524",
+  "etl_release": "bc662abf70e0f9b5bda599d051d2354fb22090dac63457b7c2ce285bfdfb5f93",
+  "new_aws_deployment": "passed",
+  "mwaa_dag": "success",
+  "zero_input": {
+    "input": 1,
+    "accepted": 0,
+    "rejected": 1,
+    "comparison": "skipped",
+    "glue_execution_seconds": 61
+  },
+  "full_input": {
+    "input": 51001,
+    "accepted": 47500,
+    "rejected": 3501,
+    "glue_execution_seconds": 127,
+    "comparison": "completed"
+  },
+  "unicode_u0085_rejected": true,
+  "current_snapshot": "jr_6b9bc295becd15100fba83cb524011c1a6574b6ddd67178e14216fc6d1eb3d48",
+  "local_tests_passed": 243,
+  "cloudwatch_image": "AWS API export; not a browser screenshot",
+  "local_verifier_fixes_committed": false
+}
