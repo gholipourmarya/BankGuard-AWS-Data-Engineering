@@ -1,0 +1,18 @@
+{
+  "case": "Embedded Unicode U+0085 in transaction ID must be rejected",
+  "row": {
+    "transaction_id": "T_UNICODE\u0085CONTROL",
+    "account_id": "A00001",
+    "amount": "1.00",
+    "currency": "EUR",
+    "transaction_type": "PAYMENT",
+    "transaction_date": "2026-01-01",
+    "source_system": "CARDS"
+  },
+  "expected_error": "INVALID_TRANSACTION_ID",
+  "full_input_sha256": {
+    "accounts.csv": "174d85ddae31e0b3d47e711f3d14e8f5358189f5e673911e394d2f1c34031a03",
+    "transactions.csv": "5c30258860b69c8074c86d91f839e17b5786a02d6e0f9c1d90058731cd05a250",
+    "customers.csv": "5b912c88910fa4d4c766fca06e0df62ba65f754f261eb1a03741768b37d0c769"
+  }
+}

@@ -1,4 +1,4 @@
-customer_id,name,country
-C001,Ali,Germany
-C002,Sara,France
-C003,Reza,Germany
+customer_id,name,country,email,tel
+C001,Ali,Germany,customer00001@example.com,+49 30 23125 00001
+C002,Sara,France,customer00002@example.com,+49 30 23125 00002
+C003,Reza,Germany,customer00003@example.com,+49 30 23125 00003

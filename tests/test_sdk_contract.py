@@ -70,6 +70,9 @@ def test_snapshot_catalog_creation_matches_sdk_models():
                               {"DatabaseName": "custom", "Name": name})
             storage = copy.deepcopy(descriptor)
             storage["Location"] = f"s3://bucket/snapshots/jr_test/{path}"
+            if name == "curated_customers":
+                storage["Columns"].extend([{"Name": "email", "Type": "string"},
+                                           {"Name": "tel", "Type": "string"}])
             jobs.add_response("create_table", {}, {"DatabaseName": "custom_jr_test", "TableInput": {
                 "Name": name, "TableType": "EXTERNAL_TABLE", "StorageDescriptor": storage,
                 "Parameters": {}, "PartitionKeys": []}})

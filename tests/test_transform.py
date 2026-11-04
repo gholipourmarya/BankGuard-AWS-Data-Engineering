@@ -140,7 +140,7 @@ def test_extra_csv_cells_are_rejected_and_preserved(tmp_path):
 
 def test_csv_multiline_and_blank_lines_keep_physical_line_numbers(tmp_path):
     path = tmp_path / "customers.csv"
-    path.write_text('customer_id,name,country\nC1,"Alice\nSmith",DE\n\nC2,Bob,FR\n')
+    path.write_text('customer_id,name,country,email,tel\nC1,"Alice\nSmith",DE,,\n\nC2,Bob,FR,,\n')
     rows = transform.read_csv_rows(path)
     assert rows[0]["name"] == "Alice\nSmith"
     assert [row["_line"] for row in rows] == [2, 5]

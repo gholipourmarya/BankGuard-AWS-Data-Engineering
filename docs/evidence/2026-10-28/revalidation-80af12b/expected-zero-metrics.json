@@ -1,0 +1,19 @@
+{
+  "input_count": 1,
+  "accepted_count": 0,
+  "rejected_count": 1,
+  "counts_consistent": true,
+  "pass_rate_percent": 0.0,
+  "rejections_by_reason": {
+    "INVALID_TRANSACTION_ID": 1
+  },
+  "by_source_system": {
+    "CARDS": {
+      "input_count": 1,
+      "accepted_count": 0,
+      "rejected_count": 1,
+      "counts_consistent": true,
+      "pass_rate_percent": 0.0
+    }
+  }
+}

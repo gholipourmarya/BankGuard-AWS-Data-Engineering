@@ -8,9 +8,9 @@ import json
 import re
 
 try:
-    from .validate import validate_metrics
+    from .validate import CUSTOMER_CONTACT_FIELDS, validate_metrics
 except ImportError:  # Glue imports the modules from the root of src.zip.
-    from validate import validate_metrics
+    from validate import CUSTOMER_CONTACT_FIELDS, validate_metrics
 
 TABLE_PATHS = {
     "curated_customers": "curated/customers/",
@@ -38,6 +38,16 @@ def create_catalog(glue, template_database, bucket, run_id):
     for name, path in TABLE_PATHS.items():
         template = glue.get_table(DatabaseName=template_database, Name=name)["Table"]
         storage = copy.deepcopy(template["StorageDescriptor"])
+        if name == "curated_customers":
+            # An ETL code release must also work with the previous Terraform template.
+            # Evolve only the new snapshot, preserving published catalogs and templates.
+            columns = storage.setdefault("Columns", [])
+            existing = {column["Name"]: column["Type"] for column in columns}
+            for field in CUSTOMER_CONTACT_FIELDS:
+                if field not in existing:
+                    columns.append({"Name": field, "Type": "string"})
+                elif existing[field] != "string":
+                    raise ValueError(f"Customer column {field} must have type string")
         storage["Location"] = f"s3://{bucket}/snapshots/{run_id}/{path}"
         glue.create_table(DatabaseName=database, TableInput={
             "Name": name, "TableType": "EXTERNAL_TABLE", "StorageDescriptor": storage,

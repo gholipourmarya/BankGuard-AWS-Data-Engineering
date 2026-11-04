@@ -1,0 +1,18 @@
+{
+  "status": "destroy_complete",
+  "verified_at": "2026-10-28T21:29:37.923541+00:00",
+  "initial_managed_instances": 70,
+  "initial_apply_deleted": 42,
+  "mwaa_deleted_asynchronously": 1,
+  "final_apply_deleted": 27,
+  "managed_instances_remaining": 0,
+  "runtime_snapshot_catalogs_deleted": 8,
+  "kms_state": "PendingDeletion",
+  "kms_deletion_date": "2026-11-04T22:27:59.417000+01:00",
+  "retained": [
+    "CloudWatch logs outside Terraform",
+    "Shared GitHub OIDC provider",
+    "Local source code and evidence"
+  ],
+  "credential_expiry_recovered": true
+}

@@ -36,7 +36,8 @@ HEADER_TX = ["transaction_id", "account_id", "amount", "currency", "transaction_
 
 def build_reference_data(rng, n_customers):
     customers = [
-        {"customer_id": f"C{i:05d}", "name": rng.choice(FIRST_NAMES), "country": rng.choice(COUNTRIES)}
+        {"customer_id": f"C{i:05d}", "name": rng.choice(FIRST_NAMES), "country": rng.choice(COUNTRIES),
+         "email": f"customer{i:05d}@example.com", "tel": f"+49 30 23125 {i:05d}"}
         for i in range(1, n_customers + 1)
     ]
     accounts = []
@@ -142,7 +143,7 @@ def generate(out_dir="data", n_transactions=50000, seed=42):
     customers, accounts = build_reference_data(rng, n_customers)
     transactions = build_transactions(rng, accounts, n_transactions)
     truth = inject_errors(rng, transactions)
-    write_csv(os.path.join(out_dir, "customers.csv"), ["customer_id", "name", "country"], customers)
+    write_csv(os.path.join(out_dir, "customers.csv"), ["customer_id", "name", "country", "email", "tel"], customers)
     write_csv(os.path.join(out_dir, "accounts.csv"), ["account_id", "customer_id", "status"], accounts)
     write_csv(os.path.join(out_dir, "transactions.csv"), HEADER_TX, transactions)
     with open(os.path.join(out_dir, "injected_errors.json"), "w", encoding="utf-8") as f:

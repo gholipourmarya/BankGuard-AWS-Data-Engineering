@@ -1,0 +1,41 @@
+{
+  "input_count": 51001,
+  "accepted_count": 47500,
+  "rejected_count": 3501,
+  "counts_consistent": true,
+  "pass_rate_percent": 93.14,
+  "rejections_by_reason": {
+    "ACCOUNT_NOT_FOUND": 500,
+    "AMOUNT_NOT_ALLOWED_FOR_TYPE": 250,
+    "DUPLICATE_CONFLICTING_CONTENT": 250,
+    "DUPLICATE_TRANSACTION_ID": 1000,
+    "INVALID_AMOUNT": 500,
+    "INVALID_CURRENCY": 250,
+    "INVALID_DATE": 500,
+    "INVALID_TRANSACTION_ID": 1,
+    "MISSING_AMOUNT": 500
+  },
+  "by_source_system": {
+    "CARDS": {
+      "input_count": 12926,
+      "accepted_count": 12020,
+      "rejected_count": 906,
+      "counts_consistent": true,
+      "pass_rate_percent": 92.99
+    },
+    "CORE_BANKING": {
+      "input_count": 30485,
+      "accepted_count": 28441,
+      "rejected_count": 2044,
+      "counts_consistent": true,
+      "pass_rate_percent": 93.3
+    },
+    "ONLINE_BANKING": {
+      "input_count": 7590,
+      "accepted_count": 7039,
+      "rejected_count": 551,
+      "counts_consistent": true,
+      "pass_rate_percent": 92.74
+    }
+  }
+}

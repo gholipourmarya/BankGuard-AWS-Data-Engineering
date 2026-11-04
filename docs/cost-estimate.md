@@ -1,5 +1,7 @@
 # Kosten und Formatvergleich
 
+**Betriebsstatus, 04.11.2026:** Die frühere Terraform-Infrastruktur wurde am 28.10.2026 vollständig abgebaut ([Nachweis](evidence/2026-10-28/terraform-destroy/README.md)). Am 04.11.2026 wurde sie erneut bereitgestellt und ist einschließlich MWAA und NAT-Gateway aktiv. Für diese neue Bereitstellung wurde noch keine vollständige Abrechnung ermittelt; die folgenden Preise und Berechnungen beziehen sich auf die historischen Messungen vom 28.10.2026.
+
 Am 28.10.2026 wurden Glue und Athena in `eu-central-1` ausgeführt. Die folgenden Werte trennen gemessene Nutzung, daraus berechnete Listenpreise und verzögert eintreffende Abrechnungsdaten. Preise wurden über die AWS Price List API abgerufen; die verwendeten Produkte stehen in [prices.json](evidence/2026-10-28/prices.json).
 
 ## Kostenblatt
@@ -58,6 +60,14 @@ Die Glue-Laufzeit ist die von AWS gemeldete `ExecutionTime`, nicht die lokale Pr
 
 Das Scanverhältnis ist **2.073,28 zu 1**. Trotzdem fallen beide Vergleichsabfragen unter Athenas Mindestabrechnung; in diesem Versuch ist daraus keine niedrigere Abfragegebühr ableitbar. Die Parquet-Abfrage war mit 456 ms gegenüber 442 ms auch nicht schneller. Eine allgemeine Beschleunigung wird daraus nicht behauptet.
 
-Dies ist keine vollständige Monatsrechnung: S3-Requests und Versionen, KMS-Aufrufe, Glue-Katalog, Lambda, SNS, CloudWatch-Dashboard, Alarme und Logs kommen je nach Nutzung hinzu. Zum Zeitpunkt dieser ersten Messung waren Airflow/MWAA und NAT noch nicht angelegt. Inzwischen wurde MWAA für die Demo aktiviert und ein DAG erfolgreich ausgeführt; MWAA- und NAT-Betriebsstunden sowie die zusätzliche Glue-/Athena-Nutzung sind in den oben berechneten Kosten nicht enthalten und müssen für die Gesamtrechnung ergänzt werden. Free-Tier-Leistungen wurden nicht abgezogen. Der [Budget-API-Stand](evidence/2026-10-28/budget.json) meldete zum Abruf 0,00 USD Ist und 0,04 USD Prognose bei 10 USD Limit; das sind verzögerte, kontoweite Abrechnungsdaten und kein Beweis für kostenlose Testläufe.
+Dies ist keine vollständige Monatsrechnung: S3-Requests und Versionen, KMS-Aufrufe, Glue-Katalog, Lambda, SNS, CloudWatch-Dashboard, Alarme und Logs kommen je nach Nutzung hinzu. Zum Zeitpunkt dieser ersten Messung waren Airflow/MWAA und NAT noch nicht angelegt. Im weiteren Verlauf des 28.10.2026 wurde MWAA für die Demo aktiviert und ein DAG erfolgreich ausgeführt; MWAA- und NAT-Betriebsstunden sowie die zusätzliche Glue-/Athena-Nutzung sind in den oben berechneten Kosten nicht enthalten und müssen für die Gesamtrechnung ergänzt werden. Free-Tier-Leistungen wurden nicht abgezogen. Der [Budget-API-Stand](evidence/2026-10-28/budget.json) meldete zum Abruf 0,00 USD Ist und 0,04 USD Prognose bei 10 USD Limit; das sind verzögerte, kontoweite Abrechnungsdaten und kein Beweis für kostenlose Testläufe.
 
-Die Infrastruktur bleibt für die Demo bestehen. Nach der Präsentation gemäß [Betrieb, Abschnitt 7](operations.md#7-aufräumen) bereinigen; die destruktive Bereinigung wurde nicht ausgeführt.
+Die frühere Bereitstellung wurde am 28.10.2026 abgebaut. Die neue Bereitstellung vom 04.11.2026 bleibt zum Prüfzeitpunkt aktiv und verursacht weitere Nutzungskosten. Nach der Präsentation gemäß [Betrieb, Abschnitt 7](operations.md#7-aufräumen) bereinigen; für diese neue Bereitstellung wurde keine Bereinigung ausgeführt.
+
+## Zusätzliche AWS-Nachprüfung vom 28.10.2026
+
+Der [neue vollständige Lauf](evidence/2026-10-28/revalidation-80af12b/full-verification.json) meldet 127 Sekunden Glue-Ausführung und 254 DPU-Sekunden; der [MWAA-Null-Ergebnis-Lauf](evidence/2026-10-28/revalidation-80af12b/zero-verification.json) 61 Sekunden und 123 DPU-Sekunden. Die DPU-Sekunden werden direkt aus AWS übernommen. Zusätzliche und wiederholte Athena-Prüfungen sowie MWAA-/NAT-Betrieb kommen hinzu; diese Nachprüfung ist in den früheren Kostenberechnungen nicht enthalten. Es wurde keine neue vollständige Abrechnung ermittelt.
+
+## Neue Bereitstellung und Prüfung vom 04.11.2026
+
+[Zwei MWAA-Läufe](evidence/2026-11-04/airflow-runs.json) waren erfolgreich. Die [AWS-Prüfung](evidence/2026-11-04/aws-verification.json) bestätigt Kunden, Konten und Transaktionen mit zwölf Athena-Abfragen und einem erfolgreichen CSV-/Parquet-Vergleich. Diese Läufe, weitere Abfragen und die Betriebszeit der neuen Infrastruktur sind in den historischen Kostenberechnungen oben nicht enthalten. Es wurden keine neuen Preise oder vollständigen Abrechnungsdaten erhoben.

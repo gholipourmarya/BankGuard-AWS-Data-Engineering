@@ -73,6 +73,29 @@ def sql_statements(text):
     return statements
 
 
+def count_rejected_rows(s3, bucket, prefix):
+    """Count actual Spark JSON rows, ignoring success markers and sidecar files."""
+    count = 0
+    for page in s3.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=prefix):
+        for item in page.get("Contents", []):
+            key = item["Key"]
+            filename = key.rsplit("/", 1)[-1]
+            if filename.startswith(("_", ".")) or not filename.endswith(".json"):
+                continue
+            body = s3.get_object(Bucket=bucket, Key=key)["Body"]
+            # StreamingBody.__enter__ returns its raw stream, which has no iter_lines.
+            with body:
+                for line in body.iter_lines():
+                    if not line.strip():
+                        continue
+                    row = json.loads(line)
+                    if (not isinstance(row, dict) or not isinstance(row.get("error_reasons"), list)
+                            or not row["error_reasons"]):
+                        raise ValueError(f"Invalid rejected row in {key}")
+                    count += 1
+    return count
+
+
 def verify(s3, glue, athena, bucket, job, workgroup, expected_prefix=None, run_id=None):
     receipt = read_run_snapshot(s3, bucket, run_id) if run_id is not None else read_published_snapshot(s3, bucket)
     if expected_prefix and receipt["input_prefix"] != expected_prefix:
@@ -112,6 +135,19 @@ def verify(s3, glue, athena, bucket, job, workgroup, expected_prefix=None, run_i
                    "(SELECT COUNT(*) FROM rejected_transactions) AS rejected")
     if tuple(map(int, counts[1])) != (receipt["accepted_count"], receipt["rejected_count"]):
         raise ValueError("Athena counts differ from the Glue receipt")
+    report["verified_datasets"] = ["transactions"]
+    if "by_dataset" in receipt:
+        references = query("reference_balance", "SELECT (SELECT COUNT(*) FROM curated_customers) AS customers_accepted, "
+                           "(SELECT COUNT(*) FROM curated_accounts) AS accounts_accepted")
+        accepted_counts = tuple(map(int, references[1]))
+        if len(accepted_counts) != 2:
+            raise ValueError("Invalid Athena reference counts")
+        for name, accepted in zip(("customers", "accounts"), accepted_counts):
+            rejected = count_rejected_rows(s3, bucket, f"snapshots/{receipt['run_id']}/rejected/{name}/")
+            expected = receipt["by_dataset"][name]
+            if (accepted, rejected) != (expected["accepted_count"], expected["rejected_count"]):
+                raise ValueError(f"Snapshot {name} counts differ from the Glue receipt")
+            report["verified_datasets"].append(name)
     for name, table, field in (("accepted", "curated_transactions", "accepted_count"),
                                ("rejected", "rejected_transactions", "rejected_count")):
         sources = query(f"{name}_by_source", f"SELECT source_system, COUNT(*) FROM {table} "

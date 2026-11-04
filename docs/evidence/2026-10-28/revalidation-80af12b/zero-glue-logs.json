@@ -1,0 +1,10 @@
+[
+  {
+    "timestamp": 1793220195681,
+    "message": "{\"bucket\": \"bankguard-977989887698-eu-central-1\", \"event\": \"job_started\", \"run_id\": \"jr_708d1a9188178b8913369f298618cbe6cdf7e7891278af53eec3e8599f82ffe6\"}\n{\"bucket\": \"bankguard-977989887698-eu-central-1\", \"event\": \"reading_csv\", \"key\": \"raw/customers.csv\"}\n"
+  },
+  {
+    "timestamp": 1793220228804,
+    "message": "{\"accepted_count\": 0, \"by_source_system\": {\"CARDS\": {\"accepted_count\": 0, \"counts_consistent\": true, \"input_count\": 1, \"pass_rate_percent\": 0.0, \"rejected_count\": 1}}, \"counts_consistent\": true, \"event\": \"job_succeeded\", \"input_count\": 1, \"pass_rate_percent\": 0.0, \"rejected_count\": 1, \"rejections_by_reason\": {\"INVALID_TRANSACTION_ID\": 1}, \"run_id\": \"jr_708d1a9188178b8913369f298618cbe6cdf7e7891278af53eec3e8599f82ffe6\", \"seconds\": 33.2}\n"
+  }
+]

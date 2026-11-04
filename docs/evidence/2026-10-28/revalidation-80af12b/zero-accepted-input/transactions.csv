@@ -1,0 +1,2 @@
+transaction_id,account_id,amount,currency,transaction_type,transaction_date,source_system
+T_UNICODECONTROL,A00001,1.00,EUR,PAYMENT,2026-01-01,CARDS

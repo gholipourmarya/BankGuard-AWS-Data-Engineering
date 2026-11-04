@@ -1,3 +1,5 @@
 # Optional self-hosted Airflow on Python 3.12. MWAA supplies its own constrained packages.
+# Install separately from the root requirements.txt; see docs/operations.md.
+-c requirements.lock
 apache-airflow==2.11.0
 apache-airflow-providers-amazon==9.9.0

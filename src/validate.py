@@ -12,6 +12,8 @@ of the input plus an ``error_reasons`` list; nothing is dropped silently, so
 from datetime import datetime
 from decimal import Decimal, InvalidOperation, localcontext
 import unicodedata
+import re
+import math
 
 ALLOWED_CURRENCIES = {"EUR", "USD"}
 ALLOWED_TRANSACTION_TYPES = {"DEPOSIT", "WITHDRAWAL", "PAYMENT", "TRANSFER", "REFUND", "REVERSAL"}
@@ -22,7 +24,9 @@ ALLOWED_SOURCE_SYSTEMS = {"CORE_BANKING", "CARDS", "ONLINE_BANKING"}
 TRANSACTION_FIELDS = ["transaction_id", "account_id", "amount", "currency", "transaction_type", "transaction_date",
                       "source_system"]
 ACCOUNT_FIELDS = ["account_id", "customer_id", "status"]
-CUSTOMER_FIELDS = ["customer_id", "name", "country"]
+CUSTOMER_REQUIRED_FIELDS = ["customer_id", "name", "country"]
+CUSTOMER_CONTACT_FIELDS = ["email", "tel"]
+CUSTOMER_FIELDS = CUSTOMER_REQUIRED_FIELDS + CUSTOMER_CONTACT_FIELDS
 
 _MISSING_MARKERS = {"", "null", "none", "nan", "n/a"}
 
@@ -42,6 +46,13 @@ def _validate_counts(metrics):
         raise ValueError("Snapshot counts must be non-negative integers")
     if counts[0] != counts[1] + counts[2]:
         raise ValueError("Snapshot input count differs from accepted plus rejected")
+    # Historical receipts may omit rates; whenever present they must match the counts.
+    if "pass_rate_percent" in metrics:
+        rate = metrics["pass_rate_percent"]
+        expected = round(counts[1] / counts[0] * 100, 2) if counts[0] else 0.0
+        if (type(rate) not in (int, float) or not 0 <= rate <= 100
+                or not math.isfinite(rate) or rate != expected):
+            raise ValueError("Snapshot pass_rate_percent differs from counts")
 
 
 def validate_metrics(metrics):
@@ -64,6 +75,20 @@ def validate_metrics(metrics):
     for field in COUNT_FIELDS:
         if sum(counts[field] for counts in systems.values()) != metrics[field]:
             raise ValueError(f"Source-system {field} sum differs from snapshot total")
+    # Older receipts contain transaction metrics only and remain readable.
+    if "by_dataset" in metrics or "overall" in metrics:
+        datasets = metrics.get("by_dataset")
+        if not isinstance(datasets, dict) or set(datasets) != {"customers", "accounts", "transactions"}:
+            raise ValueError("Invalid snapshot by_dataset breakdown")
+        for counts in datasets.values():
+            _validate_counts(counts)
+        overall = metrics.get("overall")
+        _validate_counts(overall)
+        for field in COUNT_FIELDS:
+            if datasets["transactions"][field] != metrics[field]:
+                raise ValueError(f"Transaction {field} differs from snapshot total")
+            if sum(counts[field] for counts in datasets.values()) != overall[field]:
+                raise ValueError(f"Dataset {field} sum differs from overall total")
 
 
 def is_missing(value):
@@ -131,14 +156,60 @@ def validate_customers(rows):
     """Required fields and unique customer_id (lowest line number is kept)."""
     valid, rejected, seen = [], [], set()
     for row in _by_line(rows):
-        reasons = _missing_reasons(row, CUSTOMER_FIELDS)
+        reasons = _missing_reasons(row, CUSTOMER_REQUIRED_FIELDS)
+        if not is_missing(row.get("email")) and not valid_email(str(row["email"]).strip()):
+            reasons.append("INVALID_EMAIL")
+        if not is_missing(row.get("tel")) and not valid_tel(str(row["tel"]).strip()):
+            reasons.append("INVALID_TEL")
         key = str(row.get("customer_id", "")).strip()
         if key and key in seen:
             reasons.append("DUPLICATE_CUSTOMER_ID")
         elif key:
             seen.add(key)
-        (rejected.append(_reject(row, reasons)) if reasons else valid.append(_normalize(row)))
+        if reasons:
+            rejected.append(_reject(row, reasons))
+        else:
+            normalized = _normalize(row)
+            for field in CUSTOMER_CONTACT_FIELDS:
+                normalized[field] = "" if is_missing(row.get(field)) else normalized[field]
+            valid.append(normalized)
     return valid, rejected
+
+
+def valid_email(value):
+    """Basic ASCII mailbox syntax; no DNS lookup or delivery guarantee."""
+    if len(value) > 254 or value.count("@") != 1:
+        return False
+    local, domain = value.split("@")
+    label = r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+    return bool(local and len(local) <= 64 and not local.startswith(".") and not local.endswith(".")
+                and ".." not in local and re.fullmatch(r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~.\-]+", local)
+                and re.fullmatch(rf"{label}(?:\.{label})+", domain))
+
+
+def valid_tel(value):
+    """Allow 7–15 digits, common separators and balanced, nonempty digit groups."""
+    if (not re.fullmatch(r"\+?[0-9 ()/.-]+", value)
+            or not 7 <= sum(char in "0123456789" for char in value) <= 15):
+        return False
+    number = value.removeprefix("+")
+    if number[0] not in "0123456789(" or number[-1] not in "0123456789)":
+        return False
+    inside, group_digits = False, 0
+    for char in number:
+        if char == "(":
+            if inside:
+                return False
+            inside, group_digits = True, 0
+        elif char == ")":
+            if not inside or not group_digits:
+                return False
+            inside = False
+        elif inside:
+            if char not in "0123456789":
+                return False
+            group_digits += 1
+    return not inside
 
 
 def validate_accounts(rows, valid_customer_ids):

@@ -1,0 +1,105 @@
+data.archive_file.start_glue_job: Reading...
+data.archive_file.run_monitor: Reading...
+data.archive_file.src: Reading...
+data.archive_file.start_glue_job: Read complete after 0s [id=b19ab22f5765e9e8f76715e581aff2cbfc1e1924]
+data.archive_file.run_monitor: Read complete after 0s [id=2481c27b72803d9395322fba3575a76a8348984a]
+data.archive_file.src: Read complete after 0s [id=bf7593a29bb395e391b82192401d6b6423a3106d]
+aws_glue_catalog_database.bankguard: Refreshing state... [id=977989887698:bankguard]
+data.aws_iam_policy_document.lambda_assume: Reading...
+data.aws_caller_identity.current: Reading...
+data.aws_iam_policy_document.glue_assume: Reading...
+aws_eip.nat[0]: Refreshing state... [id=eipalloc-099d5f912c832b77b]
+aws_cloudwatch_dashboard.bankguard: Refreshing state... [id=bankguard]
+data.aws_iam_policy_document.lambda_assume: Read complete after 0s [id=2690255455]
+aws_cloudwatch_event_rule.check_runs: Refreshing state... [id=bankguard-check-glue-runs]
+aws_budgets_budget.monthly[0]: Refreshing state... [id=977989887698:bankguard-monthly]
+aws_vpc.mwaa[0]: Refreshing state... [id=vpc-031fa261a84cf34d1]
+aws_sns_topic.alerts: Refreshing state... [id=arn:aws:sns:eu-central-1:977989887698:bankguard-alerts]
+data.aws_iam_policy_document.glue_assume: Read complete after 0s [id=2681768870]
+data.aws_availability_zones.available: Reading...
+aws_kms_key.lake: Refreshing state... [id=7ec8608d-7adc-4093-9f4b-42121a218a63]
+data.aws_caller_identity.current: Read complete after 0s [id=977989887698]
+data.aws_iam_policy_document.mwaa_assume: Reading...
+data.aws_iam_policy_document.mwaa_assume: Read complete after 0s [id=2750727584]
+aws_iam_role.run_monitor: Refreshing state... [id=bankguard-run-monitor]
+data.aws_availability_zones.available: Read complete after 0s [id=eu-central-1]
+aws_iam_role.trigger: Refreshing state... [id=bankguard-trigger-role]
+aws_iam_role.glue: Refreshing state... [id=bankguard-glue-role]
+aws_iam_role.mwaa[0]: Refreshing state... [id=bankguard-mwaa-execution]
+aws_s3_bucket.mwaa[0]: Refreshing state... [id=bankguard-mwaa-977989887698-eu-central-1]
+data.aws_iam_policy_document.github_trust[0]: Reading...
+data.aws_iam_policy_document.github_trust[0]: Read complete after 0s [id=164479628]
+aws_sns_topic_subscription.email[0]: Refreshing state... [id=arn:aws:sns:eu-central-1:977989887698:bankguard-alerts:f313d970-fa4a-4578-b6d6-5192543d3de1]
+aws_cloudwatch_metric_alarm.pass_rate_low: Refreshing state... [id=bankguard-pass-rate-low]
+aws_s3_bucket.lake: Refreshing state... [id=bankguard-977989887698-eu-central-1]
+aws_kms_alias.lake: Refreshing state... [id=alias/bankguard-lake]
+aws_iam_role.github_deploy[0]: Refreshing state... [id=bankguard-github-deploy]
+aws_subnet.private[1]: Refreshing state... [id=subnet-052416f6b9cc16f35]
+aws_security_group.mwaa[0]: Refreshing state... [id=sg-08c75af51a7d9951c]
+aws_internet_gateway.mwaa[0]: Refreshing state... [id=igw-0d4681c58f73929f8]
+aws_subnet.public[0]: Refreshing state... [id=subnet-03a0f1e40ec1a0524]
+aws_subnet.public[1]: Refreshing state... [id=subnet-0b51626211b1e6389]
+aws_s3_bucket_server_side_encryption_configuration.mwaa[0]: Refreshing state... [id=bankguard-mwaa-977989887698-eu-central-1]
+aws_subnet.private[0]: Refreshing state... [id=subnet-09f1ed4a53e6a92d9]
+aws_s3_bucket_public_access_block.mwaa[0]: Refreshing state... [id=bankguard-mwaa-977989887698-eu-central-1]
+aws_s3_bucket_versioning.mwaa[0]: Refreshing state... [id=bankguard-mwaa-977989887698-eu-central-1]
+aws_iam_role_policy_attachment.run_monitor_logs: Refreshing state... [id=bankguard-run-monitor-20261028090929335200000001]
+aws_route_table.public[0]: Refreshing state... [id=rtb-0945be01d71f2d6e9]
+aws_glue_catalog_table.curated["customers"]: Refreshing state... [id=977989887698:bankguard:curated_customers]
+aws_s3_bucket_server_side_encryption_configuration.lake: Refreshing state... [id=bankguard-977989887698-eu-central-1]
+aws_glue_catalog_table.curated_transactions: Refreshing state... [id=977989887698:bankguard:curated_transactions]
+aws_s3_object.src_zip: Refreshing state... [id=releases/613339f009050b35c8206a03fcd196349b2160328fc240b9fb6369e8c0c6f6b5/src.zip]
+aws_glue_catalog_table.rejected_transactions: Refreshing state... [id=977989887698:bankguard:rejected_transactions]
+aws_s3_bucket_versioning.lake: Refreshing state... [id=bankguard-977989887698-eu-central-1]
+data.aws_iam_policy_document.glue_data: Reading...
+data.aws_iam_policy_document.glue_data: Read complete after 0s [id=3614099709]
+aws_s3_object.glue_script: Refreshing state... [id=releases/613339f009050b35c8206a03fcd196349b2160328fc240b9fb6369e8c0c6f6b5/banking_etl.py]
+aws_glue_catalog_table.curated["accounts"]: Refreshing state... [id=977989887698:bankguard:curated_accounts]
+aws_s3_bucket_public_access_block.lake: Refreshing state... [id=bankguard-977989887698-eu-central-1]
+aws_glue_catalog_table.comparison_transactions_csv: Refreshing state... [id=977989887698:bankguard:comparison_transactions_csv]
+aws_iam_role_policy_attachment.trigger_logs: Refreshing state... [id=bankguard-trigger-role-20261028090929407900000003]
+aws_iam_role_policy_attachment.glue_service: Refreshing state... [id=bankguard-glue-role-20261028090929403900000002]
+aws_athena_workgroup.bankguard: Refreshing state... [id=bankguard]
+aws_nat_gateway.mwaa[0]: Refreshing state... [id=nat-08001c20ad61f8ea5]
+aws_route_table_association.public[1]: Refreshing state... [id=rtbassoc-04151d558e232057d]
+aws_route_table_association.public[0]: Refreshing state... [id=rtbassoc-0a23ccd8a3b769dee]
+aws_iam_role_policy.glue_data: Refreshing state... [id=bankguard-glue-role:bankguard-glue-data]
+aws_glue_job.etl: Refreshing state... [id=bankguard-etl]
+aws_route_table.private[0]: Refreshing state... [id=rtb-072c50db3c7df132f]
+aws_route_table_association.private[1]: Refreshing state... [id=rtbassoc-03125aa0cf84df032]
+aws_route_table_association.private[0]: Refreshing state... [id=rtbassoc-063448de9a1040a81]
+aws_cloudwatch_event_rule.glue_failed: Refreshing state... [id=bankguard-glue-job-failed]
+data.aws_iam_policy_document.github_deploy: Reading...
+data.aws_iam_policy_document.trigger: Reading...
+aws_lambda_function.start_glue_job: Refreshing state... [id=bankguard-start-glue-job]
+data.aws_iam_policy_document.trigger: Read complete after 0s [id=512575137]
+data.aws_iam_policy_document.run_monitor: Reading...
+data.aws_iam_policy_document.github_deploy: Read complete after 0s [id=733235603]
+data.aws_iam_policy_document.run_monitor: Read complete after 0s [id=1457407647]
+data.aws_iam_policy_document.mwaa: Reading...
+aws_iam_role_policy.trigger: Refreshing state... [id=bankguard-trigger-role:bankguard-trigger]
+aws_iam_role_policy.github_deploy[0]: Refreshing state... [id=bankguard-github-deploy:bankguard-github-deploy]
+aws_iam_role_policy.run_monitor: Refreshing state... [id=bankguard-run-monitor:terraform-20261028090932909500000005]
+data.aws_iam_policy_document.mwaa: Read complete after 1s [id=3929559019]
+data.aws_iam_policy_document.alerts: Reading...
+data.aws_iam_policy_document.alerts: Read complete after 0s [id=2234292772]
+aws_cloudwatch_event_target.glue_failed_to_sns: Refreshing state... [id=bankguard-glue-job-failed-terraform-20261028090930107600000004]
+aws_iam_role_policy.mwaa[0]: Refreshing state... [id=bankguard-mwaa-execution:bankguard-mwaa-execution]
+aws_sns_topic_policy.alerts: Refreshing state... [id=arn:aws:sns:eu-central-1:977989887698:bankguard-alerts]
+aws_lambda_function.run_monitor: Refreshing state... [id=bankguard-check-glue-runs]
+aws_lambda_function_event_invoke_config.trigger: Refreshing state... [id=bankguard-start-glue-job]
+aws_lambda_permission.allow_s3: Refreshing state... [id=AllowS3Invoke]
+aws_lambda_permission.check_runs: Refreshing state... [id=AllowScheduledRunCheck]
+aws_cloudwatch_event_target.check_runs: Refreshing state... [id=bankguard-check-glue-runs-terraform-20261028091626719300000001]
+aws_cloudwatch_metric_alarm.run_monitor_errors: Refreshing state... [id=bankguard-run-monitor-errors]
+aws_s3_bucket_notification.raw_upload: Refreshing state... [id=bankguard-977989887698-eu-central-1]
+aws_s3_object.dag[0]: Refreshing state... [id=dags/bankguard_pipeline.py]
+aws_s3_object.dag_validation[0]: Refreshing state... [id=dags/bankguard_validation.py]
+aws_s3_object.dag_config[0]: Refreshing state... [id=dags/bankguard_config.py]
+aws_s3_bucket_lifecycle_configuration.lake: Refreshing state... [id=bankguard-977989887698-eu-central-1]
+aws_mwaa_environment.airflow[0]: Refreshing state... [id=bankguard-airflow]
+
+No changes. Your infrastructure matches the configuration.
+
+Terraform has compared your real infrastructure against your configuration
+and found no differences, so no changes are needed.

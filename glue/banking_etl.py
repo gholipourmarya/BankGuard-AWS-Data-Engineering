@@ -34,6 +34,7 @@ import transform  # from src.zip (imports validate itself)
 # would register the same argparse option twice.
 args = getResolvedOptions(sys.argv, ["JOB_NAME", "bucket", "input_prefix", "database"])
 BUCKET = args["bucket"]
+JOB_NAME = args["JOB_NAME"]
 RUN_ID = args["JOB_RUN_ID"]
 OUTPUT_PREFIX = f"snapshots/{RUN_ID}"
 INPUT_PREFIX = args["input_prefix"].rstrip("/")
@@ -55,14 +56,15 @@ def log(event, **fields):
 
 
 def read_raw_csv(name):
-    fields = {"customers.csv": transform.validate.CUSTOMER_FIELDS,
+    fields = {"customers.csv": transform.validate.CUSTOMER_REQUIRED_FIELDS,
               "accounts.csv": transform.validate.ACCOUNT_FIELDS,
               "transactions.csv": transform.validate.TRANSACTION_FIELDS}
     key = f"{INPUT_PREFIX}/{name}"
     log("reading_csv", bucket=BUCKET, key=key)
     response = s3.get_object(Bucket=BUCKET, Key=key)
     with io.TextIOWrapper(response["Body"], encoding="utf-8-sig", newline="") as stream:
-        rows = transform.parse_csv_rows(stream, fields[name])
+        optional = transform.validate.CUSTOMER_CONTACT_FIELDS if name == "customers.csv" else ()
+        rows = transform.parse_csv_rows(stream, fields[name], optional)
     log("csv_loaded", file=name, rows=len(rows))
     return rows
 
@@ -97,7 +99,7 @@ def write_rejected(rows, name):
 
 
 def write_outputs(result):
-    write_parquet(result["customers"][0], ["customer_id", "name", "country"], "customers")
+    write_parquet(result["customers"][0], transform.validate.CUSTOMER_FIELDS, "customers")
     write_parquet(result["accounts"][0], ["account_id", "customer_id", "status"], "accounts")
     write_parquet(result["transactions"][0],
                   ["transaction_id", "account_id", "amount", "currency", "transaction_type", "transaction_date",
@@ -105,18 +107,30 @@ def write_outputs(result):
                   "transactions", partition_by="transaction_date")
     for name in ("customers", "accounts", "transactions"):
         write_rejected(result[name][1], name)
+    s3.put_object(Bucket=BUCKET, Key=f"{OUTPUT_PREFIX}/dataset_rework_report.json",
+                  Body=json.dumps(result["dataset_rework_report"], sort_keys=True).encode("utf-8"),
+                  ContentType="application/json")
 
 
 def put_metrics(metrics):
+    # Keep each dataset visible even when the overall rate is high.
+    datasets = {"overall": metrics.get("overall", metrics),
+                **metrics.get("by_dataset", {"transactions": metrics})}
+    data = []
+    for dataset, counts in datasets.items():
+        dimensions = [{"Name": "JobName", "Value": JOB_NAME}, {"Name": "Dataset", "Value": dataset}]
+        for name, field in (("InputCount", "input_count"), ("AcceptedCount", "accepted_count"),
+                            ("RejectedCount", "rejected_count")):
+            data.append({"MetricName": name, "Value": counts[field], "Unit": "Count", "Dimensions": dimensions})
+        # Empty files have no quality sample; do not signal a 0% quality failure.
+        if counts["input_count"]:
+            data.append({"MetricName": "PassRatePercent",
+                         "Value": round(counts["accepted_count"] / counts["input_count"] * 100, 2),
+                         "Unit": "Percent", "Dimensions": dimensions})
     try:
         boto3.client("cloudwatch").put_metric_data(
             Namespace="BankGuard",
-            MetricData=[
-                {"MetricName": "InputCount", "Value": metrics["input_count"], "Unit": "Count"},
-                {"MetricName": "AcceptedCount", "Value": metrics["accepted_count"], "Unit": "Count"},
-                {"MetricName": "RejectedCount", "Value": metrics["rejected_count"], "Unit": "Count"},
-                {"MetricName": "PassRatePercent", "Value": metrics["pass_rate_percent"], "Unit": "Percent"},
-            ],
+            MetricData=data,
         )
     except Exception as exc:  # metrics must never break the ETL itself
         log("put_metric_data_failed", error=str(exc))

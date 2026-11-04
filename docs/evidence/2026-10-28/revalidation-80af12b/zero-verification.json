@@ -1,0 +1,282 @@
+{
+  "verified_at": "2026-10-28T20:48:45.838928+00:00",
+  "snapshot": {
+    "accepted_count": 0,
+    "by_source_system": {
+      "CARDS": {
+        "accepted_count": 0,
+        "counts_consistent": true,
+        "input_count": 1,
+        "pass_rate_percent": 0.0,
+        "rejected_count": 1
+      }
+    },
+    "counts_consistent": true,
+    "data_prefix": "snapshots/jr_708d1a9188178b8913369f298618cbe6cdf7e7891278af53eec3e8599f82ffe6/",
+    "database": "bankguard_jr_708d1a9188178b8913369f298618cbe6cdf7e7891278af53eec3e8599f82ffe6",
+    "input_count": 1,
+    "input_prefix": "raw",
+    "pass_rate_percent": 0.0,
+    "rejected_count": 1,
+    "rejections_by_reason": {
+      "INVALID_TRANSACTION_ID": 1
+    },
+    "run_id": "jr_708d1a9188178b8913369f298618cbe6cdf7e7891278af53eec3e8599f82ffe6"
+  },
+  "glue_run": {
+    "Id": "jr_708d1a9188178b8913369f298618cbe6cdf7e7891278af53eec3e8599f82ffe6",
+    "Attempt": 0,
+    "JobName": "bankguard-etl",
+    "JobMode": "SCRIPT",
+    "JobRunQueuingEnabled": true,
+    "StartedOn": "2026-10-28 21:42:24.780000+01:00",
+    "LastModifiedOn": "2026-10-28 21:43:59.647000+01:00",
+    "CompletedOn": "2026-10-28 21:43:59.647000+01:00",
+    "JobRunState": "SUCCEEDED",
+    "Arguments": {},
+    "PredecessorRuns": [],
+    "AllocatedCapacity": 2,
+    "ExecutionTime": 61,
+    "Timeout": 30,
+    "MaxCapacity": 2.0,
+    "WorkerType": "G.1X",
+    "NumberOfWorkers": 2,
+    "LogGroupName": "/aws-glue/jobs",
+    "GlueVersion": "4.0",
+    "DPUSeconds": 123.0
+  },
+  "queries": {
+    "balance": {
+      "sql": "SELECT (SELECT COUNT(*) FROM curated_transactions) AS accepted, (SELECT COUNT(*) FROM rejected_transactions) AS rejected",
+      "statistics": {
+        "EngineExecutionTimeInMillis": 797,
+        "DataScannedInBytes": 405,
+        "TotalExecutionTimeInMillis": 1075,
+        "QueryQueueTimeInMillis": 54,
+        "ServicePreProcessingTimeInMillis": 193,
+        "ServiceProcessingTimeInMillis": 31,
+        "ResultReuseInformation": {
+          "ReusedPreviousResult": false
+        },
+        "QueryExecutionId": "ed0b73e9-3524-4cf0-b90e-1407d885ac23"
+      },
+      "rows": [
+        [
+          "accepted",
+          "rejected"
+        ],
+        [
+          "0",
+          "1"
+        ]
+      ]
+    },
+    "accepted_by_source": {
+      "sql": "SELECT source_system, COUNT(*) FROM curated_transactions GROUP BY source_system ORDER BY source_system",
+      "statistics": {
+        "EngineExecutionTimeInMillis": 389,
+        "DataScannedInBytes": 0,
+        "TotalExecutionTimeInMillis": 510,
+        "QueryQueueTimeInMillis": 53,
+        "ServicePreProcessingTimeInMillis": 40,
+        "QueryPlanningTimeInMillis": 135,
+        "ServiceProcessingTimeInMillis": 28,
+        "ResultReuseInformation": {
+          "ReusedPreviousResult": false
+        },
+        "QueryExecutionId": "155abe36-ad25-44ac-a56e-7dea476c3797"
+      },
+      "rows": [
+        [
+          "source_system",
+          "_col1"
+        ]
+      ]
+    },
+    "rejected_by_source": {
+      "sql": "SELECT source_system, COUNT(*) FROM rejected_transactions GROUP BY source_system ORDER BY source_system",
+      "statistics": {
+        "EngineExecutionTimeInMillis": 341,
+        "DataScannedInBytes": 405,
+        "TotalExecutionTimeInMillis": 470,
+        "QueryQueueTimeInMillis": 65,
+        "ServicePreProcessingTimeInMillis": 41,
+        "QueryPlanningTimeInMillis": 61,
+        "ServiceProcessingTimeInMillis": 23,
+        "ResultReuseInformation": {
+          "ReusedPreviousResult": false
+        },
+        "QueryExecutionId": "3708921f-177f-4a2e-a68a-9d2e30a4decf"
+      },
+      "rows": [
+        [
+          "source_system",
+          "_col1"
+        ],
+        [
+          "CARDS",
+          "1"
+        ]
+      ]
+    },
+    "country_analysis_1": {
+      "sql": "SELECT\n    c.country,\n    t.currency,\n    COUNT(*)      AS transaction_count,\n    SUM(t.amount) AS total_amount\nFROM curated_transactions t\nJOIN curated_accounts  a ON a.account_id  = t.account_id\nJOIN curated_customers c ON c.customer_id = a.customer_id\nGROUP BY c.country, t.currency\nORDER BY c.country, t.currency",
+      "statistics": {
+        "EngineExecutionTimeInMillis": 464,
+        "DataScannedInBytes": 0,
+        "TotalExecutionTimeInMillis": 583,
+        "QueryQueueTimeInMillis": 57,
+        "ServicePreProcessingTimeInMillis": 47,
+        "QueryPlanningTimeInMillis": 142,
+        "ServiceProcessingTimeInMillis": 15,
+        "ResultReuseInformation": {
+          "ReusedPreviousResult": false
+        },
+        "QueryExecutionId": "72e2f45c-fe18-4f5d-9355-b11d14edfcc3"
+      },
+      "rows": [
+        [
+          "country",
+          "currency",
+          "transaction_count",
+          "total_amount"
+        ]
+      ]
+    },
+    "daily_transactions_1": {
+      "sql": "SELECT\n    transaction_date,\n    currency,\n    COUNT(*)    AS transaction_count,\n    SUM(amount) AS total_amount\nFROM curated_transactions\nGROUP BY transaction_date, currency\nORDER BY transaction_date, currency",
+      "statistics": {
+        "EngineExecutionTimeInMillis": 416,
+        "DataScannedInBytes": 0,
+        "TotalExecutionTimeInMillis": 564,
+        "QueryQueueTimeInMillis": 91,
+        "ServicePreProcessingTimeInMillis": 36,
+        "QueryPlanningTimeInMillis": 135,
+        "ServiceProcessingTimeInMillis": 21,
+        "ResultReuseInformation": {
+          "ReusedPreviousResult": false
+        },
+        "QueryExecutionId": "fea38fea-e729-4d19-a6b1-b2d0c15909c3"
+      },
+      "rows": [
+        [
+          "transaction_date",
+          "currency",
+          "transaction_count",
+          "total_amount"
+        ]
+      ]
+    },
+    "data_quality_1": {
+      "sql": "SELECT\n    reason,\n    COUNT(*) AS rejected_records\nFROM rejected_transactions\nCROSS JOIN UNNEST(error_reasons) AS u (reason)\nGROUP BY reason\nORDER BY rejected_records DESC",
+      "statistics": {
+        "EngineExecutionTimeInMillis": 313,
+        "DataScannedInBytes": 405,
+        "TotalExecutionTimeInMillis": 437,
+        "QueryQueueTimeInMillis": 59,
+        "ServicePreProcessingTimeInMillis": 40,
+        "QueryPlanningTimeInMillis": 50,
+        "ServiceProcessingTimeInMillis": 25,
+        "ResultReuseInformation": {
+          "ReusedPreviousResult": false
+        },
+        "QueryExecutionId": "0a5ee6c9-1161-449f-8c98-36fe6bccc782"
+      },
+      "rows": [
+        [
+          "reason",
+          "rejected_records"
+        ],
+        [
+          "INVALID_TRANSACTION_ID",
+          "1"
+        ]
+      ]
+    },
+    "data_quality_2": {
+      "sql": "SELECT\n    source_system,\n    COUNT(*) AS rejected_records\nFROM rejected_transactions\nGROUP BY source_system\nORDER BY rejected_records DESC",
+      "statistics": {
+        "EngineExecutionTimeInMillis": 455,
+        "DataScannedInBytes": 405,
+        "TotalExecutionTimeInMillis": 590,
+        "QueryQueueTimeInMillis": 62,
+        "ServicePreProcessingTimeInMillis": 49,
+        "QueryPlanningTimeInMillis": 61,
+        "ServiceProcessingTimeInMillis": 24,
+        "ResultReuseInformation": {
+          "ReusedPreviousResult": false
+        },
+        "QueryExecutionId": "523e8d31-e7be-4b64-976e-475f2f52d1e4"
+      },
+      "rows": [
+        [
+          "source_system",
+          "rejected_records"
+        ],
+        [
+          "CARDS",
+          "1"
+        ]
+      ]
+    },
+    "rework_report_1": {
+      "sql": "SELECT\n    source_system,\n    reason,\n    COUNT(*) AS rejected_records,\n    array_join(slice(array_distinct(array_agg(transaction_id)), 1, 5), ' ') AS example_transaction_ids\nFROM rejected_transactions\nCROSS JOIN UNNEST(error_reasons) AS u (reason)\nGROUP BY source_system, reason\nORDER BY source_system, rejected_records DESC",
+      "statistics": {
+        "EngineExecutionTimeInMillis": 392,
+        "DataScannedInBytes": 405,
+        "TotalExecutionTimeInMillis": 505,
+        "QueryQueueTimeInMillis": 49,
+        "ServicePreProcessingTimeInMillis": 39,
+        "QueryPlanningTimeInMillis": 67,
+        "ServiceProcessingTimeInMillis": 25,
+        "ResultReuseInformation": {
+          "ReusedPreviousResult": false
+        },
+        "QueryExecutionId": "80f054bb-c988-4b47-a838-3f8dc725501a"
+      },
+      "rows": [
+        [
+          "source_system",
+          "reason",
+          "rejected_records",
+          "example_transaction_ids"
+        ],
+        [
+          "CARDS",
+          "INVALID_TRANSACTION_ID",
+          "1",
+          "T_UNICODE\u0085CONTROL"
+        ]
+      ]
+    },
+    "comparison_day": {
+      "sql": "SELECT MIN(transaction_date) FROM curated_transactions",
+      "statistics": {
+        "EngineExecutionTimeInMillis": 382,
+        "DataScannedInBytes": 0,
+        "TotalExecutionTimeInMillis": 483,
+        "QueryQueueTimeInMillis": 54,
+        "ServicePreProcessingTimeInMillis": 29,
+        "QueryPlanningTimeInMillis": 131,
+        "ServiceProcessingTimeInMillis": 18,
+        "ResultReuseInformation": {
+          "ReusedPreviousResult": false
+        },
+        "QueryExecutionId": "d14a90b9-963c-48c7-8c0b-5112429eefb6"
+      },
+      "rows": [
+        [
+          "_col0"
+        ],
+        [
+          null
+        ]
+      ]
+    }
+  },
+  "receipt_key": "runs/jr_708d1a9188178b8913369f298618cbe6cdf7e7891278af53eec3e8599f82ffe6/metrics.json",
+  "counts_verified": true,
+  "comparison_day": null,
+  "comparison_status": "skipped",
+  "comparison_skip_reason": "No accepted transactions for the format comparison"
+}

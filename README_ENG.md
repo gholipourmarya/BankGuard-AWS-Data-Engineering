@@ -9,6 +9,8 @@ BankGuard validates transaction files from multiple banking systems, separates i
 
 All data is synthetic. No real banking customer data is used.
 
+**Operational status, November 4, 2026:** Infrastructure has been deployed again and is active, including MWAA and the NAT gateway. Two MWAA runs succeeded; AWS verification confirms outputs for all three datasets. [AWS verification](docs/evidence/2026-11-04/aws-verification.json), [MWAA runs](docs/evidence/2026-11-04/airflow-runs.json). The [October 28 teardown](docs/evidence/2026-10-28/terraform-destroy/README.md) concerns the earlier deployment.
+
 ## Table of Contents
 
 1. [The Problem](#the-problem)
@@ -44,11 +46,11 @@ BankGuard processes three CSV files:
 
 Each record is validated and classified.
 
-**Valid records** are stored as date-partitioned Parquet files in the snapshot directory:
+**Valid records** are stored as Parquet files in the snapshot directory:
 
 `snapshots/<run-id>/curated/`
 
-These records can be queried using Amazon Athena.
+Transactions are partitioned by date. Customers and accounts are stored without date partitions. These records can be queried using Amazon Athena.
 
 **Invalid records** are stored with **all rejection reasons** in:
 
@@ -87,7 +89,7 @@ customers.csv   accounts.csv   transactions.csv
       Published Snapshot
              |
              v
-      Date-partitioned data
+      Transactions partitioned by date
              |
              v
        Glue Data Catalog
@@ -145,16 +147,19 @@ Additional values are preserved.
 
 Invalid CSV headers and CSV syntax errors explicitly stop the execution.
 
+`customers.csv` supports the optional `email` and `tel` columns. Older customer files without these columns remain valid. Populated values must match the email or telephone format rules; missing contact values are stored as empty strings in accepted outputs. See the [data model](docs/data-model.md) for the exact formats.
+
 | Validation Rule | Error Codes |
 |---|---|
 | Required fields must be present; empty values and `NULL` are treated as missing | `MISSING_<FIELD>`, e.g. `MISSING_AMOUNT` |
 | IDs must not contain embedded ASCII/Unicode control characters (category `Cc`) | `INVALID_CUSTOMER_ID`, `INVALID_ACCOUNT_ID`, `INVALID_TRANSACTION_ID` |
-| IDs must be unique; the record with the lowest source line number is retained | `DUPLICATE_TRANSACTION_ID`, `DUPLICATE_ACCOUNT_ID`, `DUPLICATE_CUSTOMER_ID`, `DUPLICATE_CONFLICTING_CONTENT` |
+| IDs must be unique; the record with the lowest source line number is validated on its own merits; later occurrences are rejected even if the original is invalid. Conflicting transaction contents additionally receive `DUPLICATE_CONFLICTING_CONTENT` | `DUPLICATE_TRANSACTION_ID`, `DUPLICATE_ACCOUNT_ID`, `DUPLICATE_CUSTOMER_ID`, `DUPLICATE_CONFLICTING_CONTENT` |
 | Amount must fit exactly into `DECIMAL(18,2)`; date must use `YYYY-MM-DD` | `INVALID_AMOUNT`, `INVALID_DATE` |
 | Currency must be `EUR` or `USD`; transaction type and source system must be supported | `INVALID_CURRENCY`, `INVALID_TRANSACTION_TYPE`, `INVALID_SOURCE_SYSTEM` |
 | Amount must be positive; negative amounts are allowed only for `REFUND` and `REVERSAL`; zero is rejected | `AMOUNT_NOT_ALLOWED_FOR_TYPE` |
 | Transactions must reference valid accounts; accounts must reference valid customers | `ACCOUNT_NOT_FOUND`, `CUSTOMER_NOT_FOUND` |
 | Account status must be `Active` or `Closed` | `INVALID_STATUS` |
+| Populated customer contacts must satisfy the format rules | `INVALID_EMAIL`, `INVALID_TEL` |
 
 ### Data Integrity
 
@@ -162,9 +167,9 @@ Every execution must satisfy:
 
 **Input Records = Accepted Records + Rejected Records**
 
-This condition must also hold independently for every source system.
+This condition must also hold independently for every dataset and source system. The top-level counts in `metrics.json` and `by_source_system` cover transactions. `by_dataset` provides separate customer, account and transaction metrics; `overall` combines all three. Any reported pass rate must match its counts.
 
-### Example of a Rejected Record
+### Excerpt from a Rejected Record
 
 ```json
 {
@@ -192,21 +197,27 @@ For each source system and rejection reason, the report contains:
 
 This helps each source system identify which data needs correction.
 
+Locally, `dataset_rework_report.csv` additionally covers errors across all three datasets, with the dataset name, rejection reason and example IDs. Glue writes this combined report to `snapshots/<run-id>/dataset_rework_report.json`.
+
+CloudWatch receives separate metrics for each dataset and the overall result, scoped by `JobName` and `Dataset`. Customers, accounts and transactions each have their own quality alarm, alongside an overall alarm. Empty datasets emit zero counts and no pass rate.
+
 ## Project Status
+
+**Status on November 4, 2026:** 378 tests passed locally and in the current Docker image. The current version is deployed on AWS. Verification confirms customers, accounts and transactions through twelve Athena queries and a CSV/Parquet comparison; two MWAA runs succeeded. The SNS email subscription is confirmed; delivery of the new quality alarms has not yet been retested. Earlier CI and alarm evidence retains its stated date and version context.
 
 | Component | Status |
 |---|---|
 | Synthetic data generator, validation rules, processing, rework report, regression tests | **Implemented and executed locally** |
-| Terraform, AWS Glue job, Athena tables, SQL | **Executed and verified on AWS on October 28, 2026** |
-| CloudWatch, SNS, KMS and file-triggered execution | Verified on AWS; EventBridge/SNS reported delivery for an intentional failure |
-| GitHub Actions | [CI passed](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40662802001); [OIDC deployment passed](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40739499524) on `feature/bankguard` |
-| Airflow / MWAA | **Executed on AWS:** `bankguard_pipeline` and all four tasks succeeded on October 28, 2026; [evidence](docs/evidence/2026-10-28/airflow-tasks.json) |
-| AWS evidence | [Query results, IDs and timings](docs/evidence/2026-10-28/aws-verification.json), logs and an exported CloudWatch chart saved |
+| Terraform, AWS Glue job, Athena tables, SQL | **Redeployed and verified on AWS on November 4, 2026** |
+| CloudWatch, SNS, KMS and file-triggered execution | Deployed on November 4; automatic batch run succeeded. EventBridge/SNS alarm delivery was verified on October 28 and has not been retested in the new deployment |
+| GitHub Actions (historical evidence) | [CI passed](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40662802001); [OIDC deployment passed](https://github.com/gholipourmarya/BankGuard-AWS-Data-Engineering/actions/runs/40739499524) on `feature/bankguard` |
+| Airflow / MWAA | **Two successful runs on November 4, 2026**, Airflow 3.3.1; [evidence](docs/evidence/2026-11-04/airflow-runs.json) |
+| AWS evidence | [Current verification of all three datasets and twelve Athena queries](docs/evidence/2026-11-04/aws-verification.json); [historical measurements](docs/evidence/2026-10-28/aws-verification.json) |
 
 Tests were executed using:
 
 ```bash
-pytest -q
+python -m pytest -q
 ```
 
 The current number of passing tests is displayed in the command output.
@@ -215,15 +226,17 @@ No AWS results are reported unless they have actually been measured.
 
 ## Quick Start
 
-BankGuard can be executed locally using Python 3 without AWS.
+BankGuard can be executed locally without AWS. Python 3.12 is recommended, matching CI and Docker. Run all commands from the project root. Processing the small example requires only the Python standard library; install the dependencies below before running tests or AWS scripts.
 
-### Example with 11 Records
+### Example with 11 Transactions
 
 The example contains:
 
 - Five valid records.
 - Six rejected records.
-- One example for each error type.
+- Examples of six selected error types.
+
+The [example guide](examples/README.md) identifies each invalid line and its expected outputs.
 
 Run:
 
@@ -231,6 +244,7 @@ Run:
 python -m src.transform examples output_example
 
 cat output_example/rework_report.csv
+cat output_example/dataset_rework_report.csv
 ```
 
 ### Full Dataset with 50,000 Transactions
@@ -246,8 +260,10 @@ source .venv/bin/activate
 Install dependencies:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
+
+`requirements.txt` uses the fixed package versions in `requirements.lock` for local tests, CI and Docker. The Docker build also pins the Python base image by digest. Version updates are checked deliberately with the tests. Optional Airflow has separate constraints and must be installed in its own environment; see [operations](docs/operations.md#6-optionales-airflow-und-mwaa).
 
 Generate synthetic data:
 
@@ -273,7 +289,7 @@ The command validates the data, writes the results to `output/`, and displays pr
 Run automated tests:
 
 ```bash
-pytest -q
+python -m pytest -q
 ```
 
 ### Data Generator Options
@@ -298,7 +314,7 @@ docker build -t bankguard .
 docker run --rm bankguard
 ```
 
-**Status:** Built and executed successfully on October 28, 2026: 113 tests and full data processing passed.
+**Status on November 4, 2026:** The current image was built and executed successfully: 378 tests and full data processing passed. It uses a pinned base image and dependency lock; local Python backups, environments and Terraform files containing local state are excluded.
 
 ## Results
 
@@ -314,7 +330,9 @@ The following results were obtained from a local execution using 51,000 transact
 | Detected errors | 3,750 |
 | Missed errors | 0 |
 | False positives | 0 |
-| Validation runtime | Approximately 3.6 seconds in the current local test run |
+| Validation runtime | Approximately 3.6 seconds in an earlier local measurement; depends on version and environment |
+
+The table covers transactions. With an additional 2,500 valid customers and 2,500 valid accounts, the combined pass rate (`overall`) is 93.75%.
 
 These results demonstrate that the validation rules detect every error introduced by the generator in this test.
 
@@ -326,37 +344,39 @@ This similarity results from the uniform distribution of injected errors and doe
 
 **AWS results, October 28, 2026:** 51,000 input, 47,500 accepted, 3,500 rejected; Glue execution time 135 seconds using two G.1X workers. Athena confirmed the counts. See [evidence](docs/evidence/2026-10-28/aws-verification.json) and [costs](docs/cost-estimate.md).
 
+Historical revalidation: the ETL release from commit `80af12b` was deployed and verified again on October 28, 2026. A full batch with one additional deliberately invalid Unicode ID (`U+0085`) produced **51,001 input = 47,500 accepted + 3,501 rejected**, with **127 seconds** of Glue execution time. The MWAA DAG also succeeded with **1 input, 0 accepted, 1 rejected** and four successful tasks. Both snapshots passed Athena verification; the format comparison was skipped for the zero-accepted snapshot. **243 local tests passed at that time.** See [evidence from this revalidation](docs/evidence/2026-10-28/revalidation-80af12b/summary.json) and [full query results](docs/evidence/2026-10-28/revalidation-80af12b/full-verification.json). Older measurements and images retain their original version context.
+
 ## Deploying to AWS
 
-Verified in `eu-central-1` on October 28, 2026. For AWS CLI login credentials with the pinned Terraform provider, use `python scripts/aws_terraform.py` from the project root; see [operations](docs/operations.md).
+Last deployed and verified in `eu-central-1` on November 4, 2026. Run all commands below from the project root. The helper `scripts/aws_terraform.py` makes a valid `aws login` session available to the pinned Terraform provider 5.x and supports credential renewal during long MWAA creations; see [operations](docs/operations.md).
 
 ### Prerequisites
 
-- AWS account
-- Configured AWS CLI
-- Terraform
-- Permissions for Amazon S3, AWS Glue, IAM, Athena, SNS, EventBridge, and AWS Budgets
+- Python environment with `requirements.txt` installed, as described in Quick Start
+- Generated input files under `data/`
+- AWS account and a valid AWS CLI session
+- Terraform 1.5 or later
+- Permissions for the resources defined in `terraform/`, including S3, Glue, IAM, KMS, Lambda, CloudWatch, Athena, SNS, EventBridge and Budgets; optional MWAA also needs its network resources
 
 ### Step 1: Initialize Terraform
 
 ```bash
-cd terraform
-
-terraform init
+terraform -chdir=terraform init
 ```
 
 ### Step 2: Format and Validate Terraform
 
 ```bash
-terraform fmt
+terraform -chdir=terraform fmt
 
-terraform validate
+terraform -chdir=terraform validate
 ```
 
 ### Step 3: Deploy AWS Infrastructure
 
 ```bash
-terraform apply -var="alert_email=you@example.com"
+python scripts/aws_terraform.py plan -var="alert_email=you@example.com"
+python scripts/aws_terraform.py apply -var="alert_email=you@example.com"
 ```
 
 Confirm the AWS SNS subscription email.
@@ -364,9 +384,7 @@ Confirm the AWS SNS subscription email.
 ### Step 4: Retrieve the S3 Bucket Name
 
 ```bash
-BUCKET=$(terraform output -raw bucket_name)
-
-cd ..
+BUCKET=$(terraform -chdir=terraform output -raw bucket_name)
 ```
 
 ### Step 5: Upload the Dataset
@@ -383,7 +401,7 @@ Finally, it uploads:
 
 Only this readiness marker triggers the AWS Lambda function.
 
-Previously submitted batches are identified using the AWS Glue execution history.
+Previously submitted batches are identified using the AWS Glue execution history. A permanent conditional S3 claim under `submissions/` prevents concurrent automatic submissions of the same batch.
 
 Additional batches are queued in AWS Glue.
 
@@ -407,12 +425,26 @@ The Athena workgroup is provided by Terraform.
 
 The Terraform-created database is used only as a schema template.
 
-### Cleanup
+### Updating an Existing Installation
 
-First, remove snapshot catalog databases using:
+The changed quality alarms and dashboard require Terraform apply. Update the ETL code as a separate release; Terraform preserves the previously selected code version. From the project root:
 
 ```bash
-python scripts/cleanup_snapshot_catalogs.py
+GLUE_JOB=$(terraform -chdir=terraform output -raw glue_job_name)
+python scripts/deploy_release.py "$BUCKET" "$GLUE_JOB"
+```
+
+The release adds contact columns when creating new snapshot catalogs, including when the schema template is older. For new receipts, the verification script also checks customer and account outputs; `verified_datasets` identifies the datasets checked. See [operations](docs/operations.md).
+
+### Cleanup
+
+First, stop active Glue runs or allow them to finish. From the project root, list the snapshot catalog databases, then remove them:
+
+```bash
+TEMPLATE_DB=$(terraform -chdir=terraform output -raw glue_database)
+python scripts/cleanup_snapshot_catalogs.py "$BUCKET" "$TEMPLATE_DB" --include-published
+# After reviewing the list, delete it including the published catalog:
+python scripts/cleanup_snapshot_catalogs.py "$BUCKET" "$TEMPLATE_DB" --delete --include-published
 ```
 
 Follow the instructions in:
@@ -422,9 +454,7 @@ Follow the instructions in:
 Then destroy the Terraform-managed infrastructure:
 
 ```bash
-cd terraform
-
-terraform destroy
+python scripts/aws_terraform.py destroy
 ```
 
 The S3 bucket and Athena workgroup are deleted together with their contents because:
@@ -445,7 +475,7 @@ Enable it with:
 enable_mwaa = true
 ```
 
-The demo environment `bankguard-airflow` is deployed and its web UI and one complete DAG run are verified. The manual DAG expects all three CSV files directly under `raw/`. MWAA and the NAT gateway generate ongoing costs while they exist.
+The earlier demo infrastructure was removed on October 28, 2026. On November 4, `bankguard-airflow` was deployed again and verified with two successful DAG runs; this deployment is active. The manual DAG expects all three CSV files directly under `raw/`. MWAA and the NAT gateway generate ongoing costs while they exist.
 
 Instructions are available in:
 
@@ -490,6 +520,7 @@ BankGuard-AWS-Data-Engineering/
 ├── airflow/
 │   ├── dags/
 │   │   └── bankguard_pipeline.py
+│   ├── requirements.lock
 │   └── requirements.txt
 ├── scripts/
 │   ├── athena_scan_compare.py
@@ -500,15 +531,22 @@ BankGuard-AWS-Data-Engineering/
 │   ├── upload_dataset.py
 │   └── verify_aws.py
 ├── examples/
+│   ├── README.md
+│   ├── accounts.csv
+│   ├── customers.csv
+│   └── transactions.csv
 ├── tests/
 │   ├── __init__.py
 │   ├── test_aws_scripts.py
+│   ├── test_customer_contacts.py
 │   ├── test_glue_output.py
 │   ├── test_lambda_trigger.py
 │   ├── test_problem_statement.py
+│   ├── test_quality_monitoring.py
 │   ├── test_release_and_monitor.py
 │   ├── test_sdk_contract.py
 │   ├── test_snapshot_publication.py
+│   ├── test_sql_reports.py
 │   ├── test_terraform_credentials.py
 │   ├── test_transform.py
 │   └── test_validation.py
@@ -530,6 +568,7 @@ BankGuard-AWS-Data-Engineering/
 ├── Dockerfile
 ├── README.md
 ├── README_ENG.md
+├── requirements.lock
 ├── requirements.txt
 └── pytest.ini
 ```
@@ -542,12 +581,12 @@ This overview shows source code and project documentation. Generated data, outpu
 |---|---|
 | `src/` | Synthetic data generation, validation, and transformation |
 | `glue/` | AWS Glue ETL job |
-| `lambda_fn/` | Starts the Glue job when the three files are available |
+| `lambda_fn/` | Starts Glue after a batch readiness marker and checks ERROR/EXPIRED runs on a schedule |
 | `terraform/` | AWS infrastructure as code |
 | `sql/` | Analytics and data quality SQL queries |
 | `airflow/dags/` | Optional Airflow orchestration |
 | `scripts/` | Dataset upload, snapshot management, deployment, and performance comparison |
-| `examples/` | Example dataset with 11 records |
+| `examples/` | Example dataset with 11 transactions plus customers and accounts |
 | `tests/` | Automated tests |
 | `docs/` | Data model, operations, project planning, and tool documentation |
 | `.github/workflows/` | CI/CD workflows |
@@ -557,7 +596,7 @@ This overview shows source code and project documentation. Generated data, outpu
 Automated tests are executed with:
 
 ```bash
-pytest -q
+python -m pytest -q
 ```
 
 The current number of tests is displayed in the output.
@@ -615,6 +654,10 @@ This reference must be resolved once, and the selected snapshot database must be
 
 Previous snapshots and their catalog databases remain available until explicitly cleaned up.
 
+### Validation Scope
+
+Accounts with status `Closed` remain valid under the current rules. Transaction dates are not checked against an account closure date. Contact validation checks syntax only and does not confirm reachability.
+
 ### Memory Usage
 
 The current validation process loads the relatively small demonstration datasets into memory.
@@ -627,13 +670,13 @@ Batch IDs must not be reused.
 
 ### Deduplication
 
-Deduplication is limited to the AWS Glue execution history.
+Permanent conditional S3 claims prevent concurrent automatic submissions of the same batch. Interrupted or ambiguous submissions retain their claim and require operator review before an intentional restart. Legacy submissions without a claim are protected only while their Glue history remains available.
 
 Failed or expired executions require an intentional restart.
 
 ### AWS Verification
 
-The central AWS pipeline and one manual Airflow/MWAA run are verified. Long-term operation and load behavior remain unmeasured. SNS reports notification delivery; personal inbox receipt needs separate confirmation.
+The central AWS pipeline and two manual MWAA runs were verified on November 4, 2026. Long-term operation and load behavior remain unmeasured. The historical SNS metric confirms delivery in the October 28 deployment. Alarm delivery in the new deployment and personal inbox receipt require separate verification.
 
 ### Code Releases
 
@@ -702,11 +745,11 @@ The implementation and verification status of each tool is documented in:
 
 | Document | Description |
 |---|---|
-| `docs/data-model.md` | Data model, architecture diagram, S3 storage areas, tables, and error codes |
+| `docs/data-model.md` | Data model, S3 storage areas, tables, and error codes |
 | `docs/operations.md` | Automation, access permissions, monitoring, and MWAA |
 | `docs/ihk-plan.md` | Project schedule and presentation plan |
 | `docs/tool-map.md` | Tool inventory and verified implementation status |
-| `docs/cost-estimate.md` | Cost estimation template |
+| [docs/cost-estimate.md](docs/cost-estimate.md) | Historical measurements, cost calculation and worksheet for further usage |
 | `docs/overview-en.md` | Technical project overview in English |
 
 ---
