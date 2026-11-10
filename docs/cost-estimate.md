@@ -1,6 +1,6 @@
 # Kosten und Formatvergleich
 
-**Betriebsstatus, 04.11.2026:** Die frühere Terraform-Infrastruktur wurde am 28.10.2026 vollständig abgebaut ([Nachweis](evidence/2026-10-28/terraform-destroy/README.md)). Am 04.11.2026 wurde sie erneut bereitgestellt und ist einschließlich MWAA und NAT-Gateway aktiv. Für diese neue Bereitstellung wurde noch keine vollständige Abrechnung ermittelt; die folgenden Preise und Berechnungen beziehen sich auf die historischen Messungen vom 28.10.2026.
+**Betriebsstatus nach dem Abbau am 04.11.2026:** Nach den erfolgreichen Tests wurden alle 73 Terraform-Ressourcen und drei zusätzliche Snapshot-Kataloge entfernt; der State ist leer. Der KMS-Schlüssel ist zur Löschung vorgemerkt. CloudWatch-Logs außerhalb des State und der gemeinsam genutzte GitHub-OIDC-Provider bleiben erhalten. [Abbau-Nachweis](evidence/2026-11-04/terraform-destroy/summary.json). Die Bereitstellung vom 04.11.2026 wurde nach den Prüfungen wieder entfernt. Bereits angefallene Kosten bleiben bestehen; eine neue vollständige Abrechnung wurde nicht ermittelt. Die folgenden Preise und Berechnungen beziehen sich auf die historischen Messungen vom 28.10.2026.
 
 Am 28.10.2026 wurden Glue und Athena in `eu-central-1` ausgeführt. Die folgenden Werte trennen gemessene Nutzung, daraus berechnete Listenpreise und verzögert eintreffende Abrechnungsdaten. Preise wurden über die AWS Price List API abgerufen; die verwendeten Produkte stehen in [prices.json](evidence/2026-10-28/prices.json).
 
@@ -62,7 +62,7 @@ Das Scanverhältnis ist **2.073,28 zu 1**. Trotzdem fallen beide Vergleichsabfra
 
 Dies ist keine vollständige Monatsrechnung: S3-Requests und Versionen, KMS-Aufrufe, Glue-Katalog, Lambda, SNS, CloudWatch-Dashboard, Alarme und Logs kommen je nach Nutzung hinzu. Zum Zeitpunkt dieser ersten Messung waren Airflow/MWAA und NAT noch nicht angelegt. Im weiteren Verlauf des 28.10.2026 wurde MWAA für die Demo aktiviert und ein DAG erfolgreich ausgeführt; MWAA- und NAT-Betriebsstunden sowie die zusätzliche Glue-/Athena-Nutzung sind in den oben berechneten Kosten nicht enthalten und müssen für die Gesamtrechnung ergänzt werden. Free-Tier-Leistungen wurden nicht abgezogen. Der [Budget-API-Stand](evidence/2026-10-28/budget.json) meldete zum Abruf 0,00 USD Ist und 0,04 USD Prognose bei 10 USD Limit; das sind verzögerte, kontoweite Abrechnungsdaten und kein Beweis für kostenlose Testläufe.
 
-Die frühere Bereitstellung wurde am 28.10.2026 abgebaut. Die neue Bereitstellung vom 04.11.2026 bleibt zum Prüfzeitpunkt aktiv und verursacht weitere Nutzungskosten. Nach der Präsentation gemäß [Betrieb, Abschnitt 7](operations.md#7-aufräumen) bereinigen; für diese neue Bereitstellung wurde keine Bereinigung ausgeführt.
+Die frühere Bereitstellung wurde am 28.10.2026 abgebaut. Die neue Bereitstellung vom 04.11.2026 wurde nach den Tests ebenfalls abgebaut; drei zusätzliche Snapshot-Kataloge wurden vorab gelöscht. [Nachweis](evidence/2026-11-04/terraform-destroy/summary.json). Bereits angefallene Nutzung und die verbleibende Log-Speicherung sind dadurch nicht aufgehoben.
 
 ## Zusätzliche AWS-Nachprüfung vom 28.10.2026
 

@@ -1,6 +1,6 @@
 # BankGuard technical overview
 
-**Status on November 4, 2026:** Infrastructure has been deployed again and is active, including MWAA and the NAT gateway. [AWS verification](evidence/2026-11-04/aws-verification.json) confirms all three datasets through twelve Athena queries and a CSV/Parquet comparison; [two MWAA runs](evidence/2026-11-04/airflow-runs.json) succeeded. 378 tests passed locally and in the current Docker image. The SNS subscription is confirmed; alarm delivery in the new deployment has not been retested. The [October 28 teardown](evidence/2026-10-28/terraform-destroy/README.md) concerns the earlier deployment.
+**Operational status after teardown on November 4, 2026:** Following successful tests, all 73 Terraform resources and three additional snapshot catalogs were removed; the state is empty. KMS key deletion is scheduled. CloudWatch logs outside the state and the shared GitHub OIDC provider are retained. [Teardown evidence](evidence/2026-11-04/terraform-destroy/summary.json). The [AWS verification](evidence/2026-11-04/aws-verification.json) and [two successful MWAA runs](evidence/2026-11-04/airflow-runs.json) describe the earlier test state; 378 local and Docker tests passed.
 
 BankGuard validates synthetic banking customers, accounts and transactions before analytical use. Valid records are published separately from rejected records; each rejection retains its reasons and source line.
 

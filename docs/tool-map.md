@@ -1,6 +1,6 @@
 # Werkzeuge und Verifizierungsstand
 
-**Stand vom 04.11.2026:** Die Infrastruktur wurde erneut bereitgestellt und ist einschließlich MWAA und NAT-Gateway aktiv. [AWS-Prüfung aller drei Datensätze](evidence/2026-11-04/aws-verification.json) und [zwei erfolgreiche MWAA-Läufe](evidence/2026-11-04/airflow-runs.json) sind gesichert. Der [Abbau vom 28.10.2026](evidence/2026-10-28/terraform-destroy/README.md) betrifft die frühere Bereitstellung. Die Alarmzustellung im neuen Deployment wurde noch nicht erneut getestet.
+**Betriebsstatus nach dem Abbau am 04.11.2026:** Nach den erfolgreichen Tests wurden alle 73 Terraform-Ressourcen und drei zusätzliche Snapshot-Kataloge entfernt; der State ist leer. Der KMS-Schlüssel ist zur Löschung vorgemerkt. CloudWatch-Logs außerhalb des State und der gemeinsam genutzte GitHub-OIDC-Provider bleiben erhalten. [Abbau-Nachweis](evidence/2026-11-04/terraform-destroy/summary.json). Die Prüfungen vom 04.11.2026 beschreiben den vorherigen Teststand. Betriebsbefehle aus dem Projektverzeichnis ausführen.
 
 | Werkzeug | Aufgabe | Stand |
 | --- | --- | --- |
@@ -13,7 +13,7 @@
 | Athena | SQL-Berichte und Scanvergleich | SQL-Berichte und gleicher CSV-/Parquet-Datenbestand geprüft; Scanmessung gesichert |
 | GitHub Actions | CI und manueller Glue-Code-Upload über OIDC | CI und OIDC-Deployment auf feature/bankguard erfolgreich; Links und Commit-Stand siehe Betrieb |
 | Docker | Lokale Tests und Verarbeitung im Container | Aktuelles Image gebaut und ausgeführt: 378 Tests und vollständige Verarbeitung erfolgreich |
-| Airflow und optional MWAA | Manueller Lauf und Prüfung seiner Erfolgsquittung | Neue Bereitstellung aktiv; zwei erfolgreiche DAG-Läufe am 04.11.2026, Airflow 3.3.1 / mw1.micro; [API-Nachweis](evidence/2026-11-04/airflow-runs.json) |
+| Airflow und optional MWAA | Manueller Lauf und Prüfung seiner Erfolgsquittung | Neue Bereitstellung nach Tests wieder abgebaut; zuvor zwei erfolgreiche DAG-Läufe am 04.11.2026, Airflow 3.3.1 / mw1.micro; [API-Nachweis](evidence/2026-11-04/airflow-runs.json) |
 
 Für Befehle und Voraussetzungen siehe [Betrieb](operations.md). Ein erfolgreicher Test mit simuliertem AWS-Client beweist keine IAM-, Netzwerk- oder Cloud-Laufzeitfunktion.
 

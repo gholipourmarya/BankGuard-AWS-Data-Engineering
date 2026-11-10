@@ -9,7 +9,7 @@ BankGuard validates transaction files from multiple banking systems, separates i
 
 All data is synthetic. No real banking customer data is used.
 
-**Operational status, November 4, 2026:** Infrastructure has been deployed again and is active, including MWAA and the NAT gateway. Two MWAA runs succeeded; AWS verification confirms outputs for all three datasets. [AWS verification](docs/evidence/2026-11-04/aws-verification.json), [MWAA runs](docs/evidence/2026-11-04/airflow-runs.json). The [October 28 teardown](docs/evidence/2026-10-28/terraform-destroy/README.md) concerns the earlier deployment.
+**Operational status after teardown on November 4, 2026:** Following successful tests, all 73 Terraform resources and three additional snapshot catalogs were removed; the state is empty. KMS key deletion is scheduled. CloudWatch logs outside the state and the shared GitHub OIDC provider are retained. [Teardown evidence](docs/evidence/2026-11-04/terraform-destroy/summary.json). [AWS verification](docs/evidence/2026-11-04/aws-verification.json) and [MWAA runs](docs/evidence/2026-11-04/airflow-runs.json) describe the tested deployment before removal.
 
 ## Table of Contents
 
@@ -203,7 +203,7 @@ CloudWatch receives separate metrics for each dataset and the overall result, sc
 
 ## Project Status
 
-**Status on November 4, 2026:** 378 tests passed locally and in the current Docker image. The current version is deployed on AWS. Verification confirms customers, accounts and transactions through twelve Athena queries and a CSV/Parquet comparison; two MWAA runs succeeded. The SNS email subscription is confirmed; delivery of the new quality alarms has not yet been retested. Earlier CI and alarm evidence retains its stated date and version context.
+**Status on November 4, 2026:** 378 tests passed locally and in the current Docker image. The version was deployed and verified on AWS; the demo infrastructure has since been removed. Verification confirms customers, accounts and transactions through twelve Athena queries and a CSV/Parquet comparison; two MWAA runs succeeded. The SNS email subscription was confirmed during testing; delivery of the new quality alarms has not yet been retested. Earlier CI and alarm evidence retains its stated date and version context.
 
 | Component | Status |
 |---|---|
@@ -475,7 +475,7 @@ Enable it with:
 enable_mwaa = true
 ```
 
-The earlier demo infrastructure was removed on October 28, 2026. On November 4, `bankguard-airflow` was deployed again and verified with two successful DAG runs; this deployment is active. The manual DAG expects all three CSV files directly under `raw/`. MWAA and the NAT gateway generate ongoing costs while they exist.
+The earlier demo infrastructure was removed on October 28, 2026. On November 4, `bankguard-airflow` was deployed again and verified with two successful DAG runs; this deployment was removed after testing on the same day. The manual DAG expects all three CSV files directly under `raw/`. MWAA and the NAT gateway generate ongoing costs while they exist.
 
 Instructions are available in:
 

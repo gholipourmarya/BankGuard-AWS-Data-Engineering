@@ -1,6 +1,6 @@
 # IHK Projektplan und Nachweise
 
-**Stand vom 04.11.2026:** Die Infrastruktur wurde erneut bereitgestellt und ist einschließlich MWAA und NAT-Gateway aktiv. [AWS-Prüfung aller drei Datensätze](evidence/2026-11-04/aws-verification.json) und [zwei erfolgreiche MWAA-Läufe](evidence/2026-11-04/airflow-runs.json) sind gesichert. Der [Abbau vom 28.10.2026](evidence/2026-10-28/terraform-destroy/README.md) betrifft die frühere Bereitstellung. Die Alarmzustellung im neuen Deployment wurde noch nicht erneut getestet.
+**Betriebsstatus nach dem Abbau am 04.11.2026:** Nach den erfolgreichen Tests wurden alle 73 Terraform-Ressourcen und drei zusätzliche Snapshot-Kataloge entfernt; der State ist leer. Der KMS-Schlüssel ist zur Löschung vorgemerkt. CloudWatch-Logs außerhalb des State und der gemeinsam genutzte GitHub-OIDC-Provider bleiben erhalten. [Abbau-Nachweis](evidence/2026-11-04/terraform-destroy/summary.json). Die Prüfungen vom 04.11.2026 beschreiben den vorherigen Teststand. Betriebsbefehle aus dem Projektverzeichnis ausführen.
 
 BankGuard untersucht, wie fehlerhafte synthetische Banktransaktionen vor einer Auswertung automatisch erkannt und isoliert werden. Die Präsentation soll Problem, Entscheidung, Umsetzung und überprüfbare Ergebnisse verbinden.
 
@@ -10,7 +10,7 @@ BankGuard untersucht, wie fehlerhafte synthetische Banktransaktionen vor einer A
 | --- | --- | --- |
 | Anforderungen | Pflichtfelder, Dublettenregel, Fremdschlüssel, Betrags- und Datumsregeln | Im Code und Datenmodell beschrieben |
 | Lokaler Prototyp | Generator, Validierung, Bilanz und Nacharbeit | Lokal getestet |
-| Infrastruktur | S3, Glue, KMS, Lambda, Athena und Monitoring | Am 04.11.2026 erneut bereitgestellt und geprüft; aktiv |
+| Infrastruktur | S3, Glue, KMS, Lambda, Athena und Monitoring | Am 04.11.2026 erneut bereitgestellt und geprüft; anschließend abgebaut |
 | Integration | Paket-Upload, Glue-Lauf, SQL, Alarmtest und optionales MWAA | Am 04.11.2026 AWS-Abgleich und zwei MWAA-Läufe erfolgreich; Fehlerlauf und Alarmzustellung historisch am 28.10.2026 geprüft |
 | Auswertung | Fehlererkennung, Laufzeit und Formatvergleich | Lokale und AWS-Messwerte sowie Formatvergleich gesichert |
 | Dokumentation | Architektur, Betrieb, Kosten und Grenzen | Im Repository vorhanden |

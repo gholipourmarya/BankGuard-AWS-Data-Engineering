@@ -5,7 +5,7 @@ BankGuard prüft Transaktionsdateien aus mehreren Systemen, sortiert fehlerhafte
 
 IHK-Projekt, Cloud Data Engineering Specialist (Prüfung am 10. November 2026). Alle Daten sind synthetisch; es werden keine echten Kundendaten verwendet.
 
-**Betriebsstatus, 04.11.2026:** Die Infrastruktur wurde erneut bereitgestellt und ist aktiv, einschließlich MWAA und NAT-Gateway. Zwei MWAA-Läufe waren erfolgreich; der AWS-Abgleich bestätigt die Ausgaben aller drei Datensätze. [AWS-Prüfung](docs/evidence/2026-11-04/aws-verification.json), [MWAA-Läufe](docs/evidence/2026-11-04/airflow-runs.json). Der [Abbau vom 28.10.2026](docs/evidence/2026-10-28/terraform-destroy/README.md) betrifft die frühere Bereitstellung.
+**Betriebsstatus nach dem Abbau am 04.11.2026:** Nach den erfolgreichen Tests wurden alle 73 Terraform-Ressourcen und drei zusätzliche Snapshot-Kataloge entfernt; der State ist leer. Der KMS-Schlüssel ist zur Löschung vorgemerkt. CloudWatch-Logs außerhalb des State und der gemeinsam genutzte GitHub-OIDC-Provider bleiben erhalten. [Abbau-Nachweis](docs/evidence/2026-11-04/terraform-destroy/summary.json). Die [AWS-Prüfung](docs/evidence/2026-11-04/aws-verification.json) und [MWAA-Läufe](docs/evidence/2026-11-04/airflow-runs.json) dokumentieren den Teststand vor dem Abbau.
 
 ## Inhalt
 
@@ -97,7 +97,7 @@ CloudWatch erhält getrennte Kennzahlen für jede Datei und den Gesamtstand, jew
 
 ## Projektstand
 
-**Stand vom 04.11.2026:** 378 Tests lokal und im aktuellen Docker-Image bestanden. Der aktuelle Stand ist auf AWS bereitgestellt. Das Prüfskript bestätigt Kunden, Konten und Transaktionen mit zwölf Athena-Abfragen sowie dem CSV-/Parquet-Vergleich; zwei MWAA-Läufe waren erfolgreich. Die SNS-E-Mail-Subscription ist bestätigt; die Zustellung der neuen Qualitätsalarme wurde noch nicht erneut getestet. Frühere CI- und Alarmnachweise behalten ihren angegebenen Versions- und Datumsbezug.
+**Stand vom 04.11.2026:** 378 Tests lokal und im aktuellen Docker-Image bestanden. Der Stand wurde auf AWS bereitgestellt und geprüft; die Demo-Infrastruktur ist inzwischen abgebaut. Das Prüfskript bestätigt Kunden, Konten und Transaktionen mit zwölf Athena-Abfragen sowie dem CSV-/Parquet-Vergleich; zwei MWAA-Läufe waren erfolgreich. Die SNS-E-Mail-Subscription war beim Test bestätigt; die Zustellung der neuen Qualitätsalarme wurde noch nicht erneut getestet. Frühere CI- und Alarmnachweise behalten ihren angegebenen Versions- und Datumsbezug.
 
 | Teil | Stand |
 | --- | --- |
@@ -196,7 +196,7 @@ python scripts/aws_terraform.py destroy
 
 Bucket und Athena-Workgroup werden mit allen Inhalten gelöscht (`force_destroy = true`). Das ist für diese Testdaten gewollt und darf **nicht** für Projekte mit echten Daten übernommen werden.
 
-Optional und standardmäßig **aus**: Amazon MWAA (`enable_mwaa=true`). Die frühere Demo-Infrastruktur wurde am 28.10.2026 entfernt. Am 04.11.2026 wurde `bankguard-airflow` erneut bereitgestellt und mit zwei erfolgreichen DAG-Läufen geprüft; diese Bereitstellung ist aktiv. Der manuelle DAG erwartet die drei CSV-Dateien direkt unter `raw/`. MWAA und NAT-Gateway verursachen laufende Kosten. Anleitung: [Betrieb, Abschnitt 6](docs/operations.md#6-optionales-airflow-und-mwaa).
+Optional und standardmäßig **aus**: Amazon MWAA (`enable_mwaa=true`). Die frühere Demo-Infrastruktur wurde am 28.10.2026 entfernt. Am 04.11.2026 wurde `bankguard-airflow` erneut bereitgestellt und mit zwei erfolgreichen DAG-Läufen geprüft; diese Bereitstellung wurde nach den Tests am selben Tag wieder abgebaut. Der manuelle DAG erwartet die drei CSV-Dateien direkt unter `raw/`. MWAA und NAT-Gateway verursachen laufende Kosten. Anleitung: [Betrieb, Abschnitt 6](docs/operations.md#6-optionales-airflow-und-mwaa).
 
 ## Projektstruktur
 
